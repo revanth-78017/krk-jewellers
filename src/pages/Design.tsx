@@ -7,6 +7,8 @@ import { Label } from '@/components/ui/label'
 import { toast } from 'sonner'
 import { Loader2, Download, Sparkles } from 'lucide-react'
 
+import { DesignService } from '@/services/DesignService'
+
 export default function Design() {
     const [prompt, setPrompt] = useState('')
     const [jewelryType, setJewelryType] = useState('Ring')
@@ -23,41 +25,17 @@ export default function Design() {
 
         setLoading(true)
         try {
-            const fullPrompt = `Design a realistic, high-quality luxury ${jewelryType} made of ${material} featuring ${gemstone}. Description: ${prompt}. The image should be photorealistic, professional jewelry photography style, white background.`
-
-            const apiKey = import.meta.env.VITE_IMAGE_GENERATION_API_KEY
-
-            if (!apiKey) {
-                throw new Error('Image Generation API Key is missing')
-            }
-
-            const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${apiKey}`,
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    model: 'google/gemini-2.5-flash-image-preview',
-                    messages: [{
-                        role: 'user',
-                        content: fullPrompt
-                    }]
-                })
+            const imageUrl = await DesignService.generateDesign({
+                type: jewelryType,
+                material,
+                gemstone,
+                prompt
             })
-
-            if (!response.ok) {
-                const errorData = await response.json()
-                throw new Error(errorData.error?.message || 'Failed to generate design')
-            }
-
-            const data = await response.json()
-            const imageUrl = data.choices[0].message.content
             setGeneratedImage(imageUrl)
             toast.success('Design generated successfully!')
         } catch (error: any) {
             console.error('Generation error:', error)
-            toast.error(error.message || 'Failed to generate design')
+            toast.error('Failed to generate design. Please try again.')
         } finally {
             setLoading(false)
         }
