@@ -9,7 +9,7 @@ export function useAdmin() {
     useEffect(() => {
         if (authLoading) return
 
-        if (user?.email === 'admin@krk.com') {
+        if (user?.role === 'admin') {
             setIsAdmin(true)
         } else {
             setIsAdmin(false)

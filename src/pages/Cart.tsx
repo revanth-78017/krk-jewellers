@@ -5,14 +5,43 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Trash2, ShoppingBag, ArrowRight, Tag } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useState } from 'react'
+import { useRazorpay } from '@/hooks/useRazorpay'
+import { useAuth } from '@/hooks/useAuth'
 
 export default function Cart() {
     const { cart, removeFromCart, applyPromoCode, total, subtotal, discountTotal } = useCart()
+    const { user } = useAuth()
+    const { initializePayment, loading } = useRazorpay()
     const [promoInput, setPromoInput] = useState('')
     const navigate = useNavigate()
 
     const handleCheckout = () => {
-        navigate('/payment')
+        if (!user) {
+            navigate('/auth')
+            return
+        }
+
+        initializePayment({
+            key: import.meta.env.VITE_RAZORPAY_KEY_ID || '',
+            amount: total * 100, // Amount in paise
+            currency: 'INR',
+            name: 'KRK Jewellers',
+            description: 'Purchase from KRK Jewellers',
+            image: '/favicon.ico',
+            handler: (response) => {
+                console.log(response)
+                // Handle success (e.g., save order to DB, clear cart)
+                navigate('/success')
+            },
+            prefill: {
+                name: user.display_name,
+                email: user.email,
+                contact: user.phone_number
+            },
+            theme: {
+                color: '#D4AF37'
+            }
+        })
     }
 
     const handleApplyPromo = () => {
@@ -139,8 +168,9 @@ export default function Cart() {
                                 <Button
                                     className="w-full bg-gradient-gold text-black hover:opacity-90 mt-6"
                                     onClick={handleCheckout}
+                                    disabled={loading}
                                 >
-                                    Checkout <ArrowRight className="w-4 h-4 ml-2" />
+                                    {loading ? 'Processing...' : 'Checkout'} <ArrowRight className="w-4 h-4 ml-2" />
                                 </Button>
                             </CardContent>
                         </Card>
