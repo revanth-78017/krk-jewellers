@@ -1,6 +1,7 @@
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
 import { useAdmin } from '@/hooks/useAdmin'
+import { useCart } from '@/contexts/CartContext'
 import { Button } from '@/components/ui/button'
 import { Moon, Sun, Menu, X } from 'lucide-react'
 import { useState } from 'react'
@@ -9,8 +10,10 @@ import { motion, AnimatePresence } from 'framer-motion'
 export default function Navigation() {
     const { user, signOut } = useAuth()
     const { isAdmin } = useAdmin()
+    const { cart } = useCart()
     const [isDark, setIsDark] = useState(false)
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+    const location = useLocation()
 
     const toggleTheme = () => {
         setIsDark(!isDark)
@@ -19,7 +22,6 @@ export default function Navigation() {
 
     const navLinks = [
         { to: '/', label: 'Home' },
-        { to: '/design', label: 'AI Design' },
         { to: '/gallery', label: 'Gallery' },
         { to: '/customize', label: 'Customize' },
         { to: '/showcase', label: 'Showcase' },
@@ -41,11 +43,24 @@ export default function Navigation() {
                             <Link
                                 key={link.to}
                                 to={link.to}
-                                className="text-foreground/80 hover:text-foreground transition-colors font-medium"
+                                className={`text-sm font-medium transition-colors hover:text-primary ${location.pathname === link.to ? 'text-primary' : 'text-muted-foreground'
+                                    }`}
                             >
                                 {link.label}
                             </Link>
                         ))}
+                        <Link
+                            to="/cart"
+                            className={`text-sm font-medium transition-colors hover:text-primary relative ${location.pathname === '/cart' ? 'text-primary' : 'text-muted-foreground'
+                                }`}
+                        >
+                            Cart
+                            {cart.length > 0 && (
+                                <span className="absolute -top-2 -right-3 bg-primary text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+                                    {cart.length}
+                                </span>
+                            )}
+                        </Link>
                         {isAdmin && (
                             <Link
                                 to="/admin"
@@ -110,6 +125,13 @@ export default function Navigation() {
                                     {link.label}
                                 </Link>
                             ))}
+                            <Link
+                                to="/cart"
+                                onClick={() => setMobileMenuOpen(false)}
+                                className="block py-2 text-foreground/80 hover:text-foreground transition-colors"
+                            >
+                                Cart ({cart.length})
+                            </Link>
                             {isAdmin && (
                                 <Link
                                     to="/admin"

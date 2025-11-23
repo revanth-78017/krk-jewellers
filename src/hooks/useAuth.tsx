@@ -1,12 +1,18 @@
 import { createContext, useContext, useEffect, useState } from 'react'
-import { User, Session } from '@supabase/supabase-js'
-import { supabase } from '@/integrations/supabase/client'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 
+// Mock User Interface
+export interface User {
+    id: string
+    email: string
+    display_name?: string
+    phone_number?: string
+    role?: 'admin' | 'user'
+}
+
 interface AuthContextType {
     user: User | null
-    session: Session | null
     signIn: (email: string, password: string) => Promise<void>
     signUp: (email: string, password: string, displayName?: string, phoneNumber?: string) => Promise<void>
     signOut: () => Promise<void>
@@ -17,41 +23,57 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [user, setUser] = useState<User | null>(null)
-    const [session, setSession] = useState<Session | null>(null)
     const [loading, setLoading] = useState(true)
     const navigate = useNavigate()
 
     useEffect(() => {
-        // Get initial session
-        supabase.auth.getSession().then(({ data: { session } }) => {
-            setSession(session)
-            setUser(session?.user ?? null)
-            setLoading(false)
-        })
-
-        // Listen for auth changes
-        const {
-            data: { subscription },
-        } = supabase.auth.onAuthStateChange((_event, session) => {
-            setSession(session)
-            setUser(session?.user ?? null)
-        })
-
-        return () => subscription.unsubscribe()
+        // Check local storage for existing session
+        const storedUser = localStorage.getItem('krk_user')
+        if (storedUser) {
+            setUser(JSON.parse(storedUser))
+        }
+        setLoading(false)
     }, [])
 
     const signIn = async (email: string, password: string) => {
+        setLoading(true)
         try {
-            const { error } = await supabase.auth.signInWithPassword({
-                email,
-                password,
-            })
-            if (error) throw error
-            toast.success('Signed in successfully!')
-            navigate('/')
+            // Simulate network delay
+            await new Promise(resolve => setTimeout(resolve, 500))
+
+            // Hardcoded Admin Check
+            if (email === 'admin@krk.com' && password === 'admin123') {
+                const adminUser: User = {
+                    id: 'admin-123',
+                    email: 'admin@krk.com',
+                    display_name: 'Admin',
+                    role: 'admin'
+                }
+                setUser(adminUser)
+                localStorage.setItem('krk_user', JSON.stringify(adminUser))
+                toast.success('Welcome back, Admin!')
+                navigate('/admin')
+                return
+            }
+
+            // Check for registered users in local storage
+            const users = JSON.parse(localStorage.getItem('krk_users') || '[]')
+            const foundUser = users.find((u: any) => u.email === email && u.password === password)
+
+            if (foundUser) {
+                const { password, ...userWithoutPassword } = foundUser
+                setUser(userWithoutPassword)
+                localStorage.setItem('krk_user', JSON.stringify(userWithoutPassword))
+                toast.success('Signed in successfully!')
+                navigate('/')
+            } else {
+                throw new Error('Invalid email or password')
+            }
         } catch (error: any) {
             toast.error(error.message || 'Failed to sign in')
             throw error
+        } finally {
+            setLoading(false)
         }
     }
 
@@ -61,41 +83,52 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         displayName?: string,
         phoneNumber?: string
     ) => {
+        setLoading(true)
         try {
-            const { error } = await supabase.auth.signUp({
+            await new Promise(resolve => setTimeout(resolve, 500))
+
+            const users = JSON.parse(localStorage.getItem('krk_users') || '[]')
+
+            if (users.some((u: any) => u.email === email)) {
+                throw new Error('User already exists')
+            }
+
+            const newUser = {
+                id: Math.random().toString(36).substr(2, 9),
                 email,
-                password,
-                options: {
-                    data: {
-                        display_name: displayName,
-                        phone_number: phoneNumber,
-                    },
-                    emailRedirectTo: window.location.origin,
-                },
-            })
-            if (error) throw error
-            toast.success('Account created! Please check your email to confirm.')
+                password, // In a real app, never store passwords plainly!
+                display_name: displayName,
+                phone_number: phoneNumber,
+                role: 'user'
+            }
+
+            users.push(newUser)
+            localStorage.setItem('krk_users', JSON.stringify(users))
+
+            // Auto sign in
+            const { password: _, ...userWithoutPassword } = newUser
+            setUser(userWithoutPassword)
+            localStorage.setItem('krk_user', JSON.stringify(userWithoutPassword))
+
+            toast.success('Account created successfully!')
             navigate('/')
         } catch (error: any) {
             toast.error(error.message || 'Failed to sign up')
             throw error
+        } finally {
+            setLoading(false)
         }
     }
 
     const signOut = async () => {
-        try {
-            const { error } = await supabase.auth.signOut()
-            if (error) throw error
-            toast.success('Signed out successfully!')
-            navigate('/auth')
-        } catch (error: any) {
-            toast.error(error.message || 'Failed to sign out')
-            throw error
-        }
+        setUser(null)
+        localStorage.removeItem('krk_user')
+        toast.success('Signed out successfully!')
+        navigate('/auth')
     }
 
     return (
-        <AuthContext.Provider value={{ user, session, signIn, signUp, signOut, loading }}>
+        <AuthContext.Provider value={{ user, signIn, signUp, signOut, loading }}>
             {children}
         </AuthContext.Provider>
     )

@@ -8,8 +8,8 @@ const Showcase = () => {
             {/* Hero Section */}
             <section className="relative h-screen w-full overflow-hidden">
                 <div
-                    className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?q=80&w=2070&auto=format&fit=crop')] 
-          bg-cover bg-center bg-no-repeat opacity-60 scale-105 animate-slow-zoom"
+                    className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-60 scale-105 animate-slow-zoom"
+                    style={{ backgroundImage: "url('https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?q=80&w=2070&auto=format&fit=crop')" }}
                 />
                 <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/40 to-black" />
 
@@ -92,7 +92,7 @@ const Showcase = () => {
 
                                 <div className="absolute bottom-0 left-0 w-full p-8 transform transition-transform duration-500">
                                     <h3 className="text-3xl font-playfair text-white mb-2">{item.title}</h3>
-                                    <p className="text-yellow-400 font-sans mb-4 opacity-0 group-hover:opacity-100 transform translate-y-4 group-hover:translate-y-0 transition-all duration-500">{item.price}</p>
+                                    <p className="text-yellow-400 font-sans mb-4 opacity-0 group-hover:opacity-100 transform translate-y-4 group-hover:translate-y-0 transition-all duration-500">{item.price.replace('$', '₹')}</p>
                                     <div className="w-12 h-12 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center text-white border border-white/20 group-hover:bg-yellow-500 group-hover:text-black transition-colors">
                                         <ArrowRight size={20} />
                                     </div>

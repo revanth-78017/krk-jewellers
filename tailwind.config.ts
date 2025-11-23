@@ -53,15 +53,14 @@ const config: Config = {
                     foreground: 'hsl(var(--card-foreground))',
                 },
                 gold: {
-                    DEFAULT: 'hsl(var(--gold))',
-                    light: 'hsl(var(--gold-light))',
-                    dark: 'hsl(var(--gold-dark))',
+                    light: '#FCF6BA',
+                    DEFAULT: '#BF953F',
+                    dark: '#B38728',
                 },
-                'rose-gold': 'hsl(var(--rose-gold))',
-                navy: {
-                    DEFAULT: 'hsl(var(--navy))',
-                    light: 'hsl(var(--navy-light))',
-                },
+            },
+            fontFamily: {
+                playfair: ['Playfair Display', 'serif'],
+                sans: ['Inter', 'sans-serif'],
             },
             borderRadius: {
                 lg: 'var(--radius)',
