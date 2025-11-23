@@ -14,6 +14,7 @@ import Admin from '@/pages/Admin'
 import Showcase from '@/pages/Showcase'
 import Cart from '@/pages/Cart'
 import Payment from '@/pages/Payment'
+import MarketTrends from '@/pages/MarketTrends'
 import NotFound from '@/pages/NotFound'
 
 const queryClient = new QueryClient({
@@ -44,6 +45,7 @@ function App() {
                                     <Route path="/showcase" element={<Showcase />} />
                                     <Route path="/cart" element={<Cart />} />
                                     <Route path="/payment" element={<Payment />} />
+                                    <Route path="/market-trends" element={<MarketTrends />} />
                                     <Route path="*" element={<NotFound />} />
                                 </Routes>
                             </div>
