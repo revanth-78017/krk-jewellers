@@ -1,62 +1,51 @@
-import { Preset, Metal, Gemstone } from '@/data/customization'
+import { Category } from '@/data/customization'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ShoppingCart, ArrowLeft } from 'lucide-react'
 import { useCart } from '@/contexts/CartContext'
 import { toast } from 'sonner'
 import { useNavigate } from 'react-router-dom'
+import LivePreview from './LivePreview'
 
 interface FinalizeDesignProps {
-    category: string
-    preset: Preset
-    metal: Metal
-    gemstone: Gemstone
+    category: Category
+    selections: Record<string, string>
     onBack: () => void
 }
 
-export default function FinalizeDesign({ category, preset, metal, gemstone, onBack }: FinalizeDesignProps) {
+export default function FinalizeDesign({ category, selections, onBack }: FinalizeDesignProps) {
     const { addToCart } = useCart()
     const navigate = useNavigate()
 
     // Calculate total price
-    const totalPrice = (preset.basePrice * metal.priceMultiplier) + (gemstone.pricePerCarat * 0.5) // Assuming 0.5 carat for simplicity
+    let totalPrice = category.basePrice
+    const selectedOptions = category.steps.map(step => {
+        const optionId = selections[step.id]
+        const option = step.options.find(o => o.id === optionId)
+        if (option) {
+            totalPrice += option.price
+        }
+        return { stepName: step.name, option }
+    }).filter(item => item.option !== undefined)
 
     const handleAddToCart = () => {
         addToCart({
             id: Math.random().toString(36).substr(2, 9),
-            name: `Custom ${preset.name}`,
-            description: `Customized ${category} with ${metal.name} and ${gemstone.name}`,
+            name: `Custom ${category.name}`,
+            description: selectedOptions.map(s => s.option!.name).join(', '),
             price: totalPrice,
-            image: preset.image,
-            category: category
+            image: category.image, // Use base image for cart thumbnail
+            category: category.id
         })
         toast.success('Custom design added to cart!')
         navigate('/cart')
     }
 
     return (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 animate-in fade-in duration-500">
             {/* Visual Preview */}
             <div className="space-y-6">
-                <div className="relative aspect-square rounded-xl overflow-hidden border-2 border-gold/20 shadow-2xl">
-                    <img
-                        src={preset.image}
-                        alt="Final Design"
-                        className="w-full h-full object-cover"
-                    />
-                    <div className="absolute bottom-4 right-4 flex gap-2">
-                        <div
-                            className="w-8 h-8 rounded-full border-2 border-white shadow-lg"
-                            style={{ backgroundColor: metal.color }}
-                            title={metal.name}
-                        />
-                        <div
-                            className="w-8 h-8 rounded-full border-2 border-white shadow-lg"
-                            style={{ backgroundColor: gemstone.color }}
-                            title={gemstone.name}
-                        />
-                    </div>
-                </div>
+                <LivePreview category={category} selections={selections} />
             </div>
 
             {/* Details & Actions */}
@@ -72,36 +61,16 @@ export default function FinalizeDesign({ category, preset, metal, gemstone, onBa
                     </CardHeader>
                     <CardContent className="p-6 space-y-4">
                         <div className="flex justify-between items-center py-2 border-b border-dashed">
-                            <span className="text-muted-foreground">Category</span>
-                            <span className="font-medium capitalize">{category}</span>
-                        </div>
-                        <div className="flex justify-between items-center py-2 border-b border-dashed">
-                            <span className="text-muted-foreground">Design Preset</span>
-                            <span className="font-medium">{preset.name}</span>
-                        </div>
-                        <div className="flex justify-between items-center py-2 border-b border-dashed">
-                            <span className="text-muted-foreground">Metal</span>
-                            <span className="font-medium">{metal.name}</span>
-                        </div>
-                        <div className="flex justify-between items-center py-2 border-b border-dashed">
-                            <span className="text-muted-foreground">Gemstone</span>
-                            <span className="font-medium">{gemstone.name}</span>
+                            <span className="text-muted-foreground">Base Model</span>
+                            <span className="font-medium">{category.name}</span>
                         </div>
 
-                        {/* Necklace Specific Logic Placeholder */}
-                        {category === 'necklaces' && (
-                            <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-100">
-                                <h4 className="font-bold text-blue-800 mb-2 text-sm">Necklace Configuration</h4>
-                                <div className="flex justify-between text-sm text-blue-700">
-                                    <span>Upper Chain</span>
-                                    <span>Standard {metal.name} Link</span>
-                                </div>
-                                <div className="flex justify-between text-sm text-blue-700 mt-1">
-                                    <span>Pendant Setting</span>
-                                    <span>{gemstone.name} Center</span>
-                                </div>
+                        {selectedOptions.map((item, index) => (
+                            <div key={index} className="flex justify-between items-center py-2 border-b border-dashed">
+                                <span className="text-muted-foreground">{item.stepName}</span>
+                                <span className="font-medium">{item.option!.name}</span>
                             </div>
-                        )}
+                        ))}
 
                         <div className="pt-4 flex justify-between items-center">
                             <span className="text-lg font-bold">Total Price</span>

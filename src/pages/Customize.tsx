@@ -1,106 +1,139 @@
 import { useState } from 'react'
-import { METALS, GEMSTONES, Preset } from '@/data/customization'
+import { CATEGORIES } from '@/data/customization'
 import StageIndicator from '@/components/customizer/StageIndicator'
 import CategorySelection from '@/components/customizer/CategorySelection'
-import PresetSelection from '@/components/customizer/PresetSelection'
-import MaterialSelection from '@/components/customizer/MaterialSelection'
+import OptionSelection from '@/components/customizer/OptionSelection'
 import FinalizeDesign from '@/components/customizer/FinalizeDesign'
+import LivePreview from '@/components/customizer/LivePreview'
 import { Button } from '@/components/ui/button'
 import { ArrowLeft } from 'lucide-react'
 
-const STAGES = ['Category', 'Design', 'Metal', 'Gemstone', 'Finalize']
-
 export default function Customize() {
-    const [currentStage, setCurrentStage] = useState(1)
-    const [selections, setSelections] = useState({
-        category: null as string | null,
-        preset: null as Preset | null,
-        metal: null as string | null,
-        gemstone: null as string | null
-    })
+    const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
+    const [currentStepIndex, setCurrentStepIndex] = useState(0)
+    const [selections, setSelections] = useState<Record<string, string>>({})
 
-    const handleNext = () => setCurrentStage(prev => Math.min(prev + 1, STAGES.length))
-    const handleBack = () => setCurrentStage(prev => Math.max(prev - 1, 1))
+    const category = CATEGORIES.find(c => c.id === selectedCategory)
+    const steps = category?.steps || []
+    const currentStep = steps[currentStepIndex]
+    const isFinalizing = selectedCategory && currentStepIndex >= steps.length
 
-    const updateSelection = (key: keyof typeof selections, value: any) => {
-        setSelections(prev => ({ ...prev, [key]: value }))
-        handleNext()
+    // Generate stage names for indicator
+    const stageNames = category
+        ? ['Category', ...steps.map(s => s.name), 'Finalize']
+        : ['Category', 'Customization', 'Finalize']
+
+    // Calculate current stage number (1-based)
+    // 1 = Category, 2...N = Steps, N+1 = Finalize
+    const currentStageNumber = !selectedCategory ? 1 : isFinalizing ? stageNames.length : currentStepIndex + 2
+
+    const handleCategorySelect = (categoryId: string) => {
+        setSelectedCategory(categoryId)
+        setCurrentStepIndex(0)
+        setSelections({})
+    }
+
+    const handleOptionSelect = (optionId: string) => {
+        if (!currentStep) return
+        setSelections(prev => ({ ...prev, [currentStep.id]: optionId }))
+        setCurrentStepIndex(prev => prev + 1)
+    }
+
+    const handleBack = () => {
+        if (isFinalizing) {
+            setCurrentStepIndex(steps.length - 1)
+        } else if (currentStepIndex > 0) {
+            setCurrentStepIndex(prev => prev - 1)
+        } else {
+            setSelectedCategory(null)
+            setSelections({})
+        }
     }
 
     return (
         <div className="min-h-screen py-8 px-4 bg-background">
-            <div className="container mx-auto max-w-6xl">
+            <div className="container mx-auto max-w-7xl">
                 <div className="mb-8 text-center">
                     <h1 className="text-4xl md:text-5xl font-playfair font-bold mb-4 text-gradient-gold">
                         Customization Studio
                     </h1>
                     <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-                        Create your unique masterpiece in 5 simple steps. Choose your style, materials, and details.
+                        Design your unique jewelry piece, step by step.
                     </p>
                 </div>
 
-                <StageIndicator currentStage={currentStage} stages={STAGES} />
+                <StageIndicator currentStage={currentStageNumber} stages={stageNames} />
 
-                <div className="mt-8 min-h-[500px]">
-                    {currentStage > 1 && currentStage < 5 && (
+                <div className="mt-8 min-h-[600px]">
+                    {/* Back Button */}
+                    {selectedCategory && (
                         <Button
                             variant="ghost"
                             onClick={handleBack}
                             className="mb-6 hover:bg-transparent hover:text-primary pl-0"
                         >
-                            <ArrowLeft className="w-4 h-4 mr-2" /> Back to previous step
+                            <ArrowLeft className="w-4 h-4 mr-2" />
+                            {currentStepIndex === 0 ? 'Back to Categories' : 'Back to previous step'}
                         </Button>
                     )}
 
-                    {currentStage === 1 && (
+                    {/* Category Selection (Stage 1) */}
+                    {!selectedCategory && (
                         <CategorySelection
-                            selectedCategory={selections.category}
-                            onSelect={(id) => updateSelection('category', id)}
+                            selectedCategory={null}
+                            onSelect={handleCategorySelect}
                         />
                     )}
 
-                    {currentStage === 2 && selections.category && (
-                        <PresetSelection
-                            categoryId={selections.category}
-                            selectedPreset={selections.preset?.id || null}
-                            onSelect={(preset) => updateSelection('preset', preset)}
-                        />
+                    {/* Customization Steps (Stage 2...N) */}
+                    {selectedCategory && !isFinalizing && category && (
+                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                            {/* Left Column: Live Preview (Sticky) */}
+                            <div className="lg:col-span-5">
+                                <div className="sticky top-24">
+                                    <h3 className="text-xl font-playfair font-bold mb-4">Live Preview</h3>
+                                    <LivePreview category={category} selections={selections} />
+
+                                    {/* Current Configuration Summary */}
+                                    <div className="mt-6 p-4 bg-muted/30 rounded-lg border border-border">
+                                        <h4 className="font-bold mb-2 text-sm uppercase tracking-wider text-muted-foreground">Current Selection</h4>
+                                        <ul className="space-y-2 text-sm">
+                                            <li className="flex justify-between">
+                                                <span>Base Model</span>
+                                                <span className="font-medium">{category.name}</span>
+                                            </li>
+                                            {steps.slice(0, currentStepIndex).map(step => {
+                                                const selectedOption = step.options.find(o => o.id === selections[step.id])
+                                                return (
+                                                    <li key={step.id} className="flex justify-between">
+                                                        <span>{step.name}</span>
+                                                        <span className="font-medium">{selectedOption?.name}</span>
+                                                    </li>
+                                                )
+                                            })}
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Right Column: Options */}
+                            <div className="lg:col-span-7">
+                                <OptionSelection
+                                    title={currentStep.name}
+                                    description={currentStep.description}
+                                    options={currentStep.options}
+                                    selectedId={selections[currentStep.id] || null}
+                                    onSelect={handleOptionSelect}
+                                />
+                            </div>
+                        </div>
                     )}
 
-                    {currentStage === 3 && (
-                        <MaterialSelection
-                            title="Select Your Metal"
-                            options={METALS.map(m => ({
-                                id: m.id,
-                                name: m.name,
-                                color: m.color,
-                                priceDisplay: `Base x ${m.priceMultiplier}`
-                            }))}
-                            selectedId={selections.metal}
-                            onSelect={(id) => updateSelection('metal', id)}
-                        />
-                    )}
-
-                    {currentStage === 4 && (
-                        <MaterialSelection
-                            title="Select Your Gemstone"
-                            options={GEMSTONES.map(g => ({
-                                id: g.id,
-                                name: g.name,
-                                color: g.color,
-                                priceDisplay: `₹${g.pricePerCarat.toLocaleString()}/ct`
-                            }))}
-                            selectedId={selections.gemstone}
-                            onSelect={(id) => updateSelection('gemstone', id)}
-                        />
-                    )}
-
-                    {currentStage === 5 && selections.preset && selections.metal && selections.gemstone && (
+                    {/* Finalize (Stage N+1) */}
+                    {isFinalizing && category && (
                         <FinalizeDesign
-                            category={selections.category!}
-                            preset={selections.preset}
-                            metal={METALS.find(m => m.id === selections.metal)!}
-                            gemstone={GEMSTONES.find(g => g.id === selections.gemstone)!}
+                            category={category}
+                            selections={selections}
                             onBack={handleBack}
                         />
                     )}
