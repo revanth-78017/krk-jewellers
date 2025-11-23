@@ -2,7 +2,7 @@ import { useOrders } from '@/contexts/OrderContext'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Link } from 'react-router-dom'
-import { ShoppingBag, Package, Clock } from 'lucide-react'
+import { ShoppingBag, Clock } from 'lucide-react'
 
 export default function MyOrders() {
     const { orders } = useOrders()
