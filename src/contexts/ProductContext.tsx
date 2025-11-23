@@ -62,16 +62,20 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
 
     const addProduct = (product: Omit<Product, 'id'>) => {
         const newProduct = { ...product, id: Math.random().toString(36).substr(2, 9) }
-        const updatedProducts = [...products, newProduct]
-        setProducts(updatedProducts)
-        localStorage.setItem('krk_products', JSON.stringify(updatedProducts))
+        setProducts(prev => {
+            const updated = [...prev, newProduct]
+            localStorage.setItem('krk_products', JSON.stringify(updated))
+            return updated
+        })
         toast.success('Product added successfully!')
     }
 
     const deleteProduct = (id: string) => {
-        const updatedProducts = products.filter(p => p.id !== id)
-        setProducts(updatedProducts)
-        localStorage.setItem('krk_products', JSON.stringify(updatedProducts))
+        setProducts(prev => {
+            const updated = prev.filter(p => p.id !== id)
+            localStorage.setItem('krk_products', JSON.stringify(updated))
+            return updated
+        })
         toast.success('Product deleted successfully!')
     }
 
