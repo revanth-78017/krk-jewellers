@@ -8,9 +8,12 @@ import { useState } from 'react'
 import { useRazorpay } from '@/hooks/useRazorpay'
 import { useAuth } from '@/hooks/useAuth'
 
+import { useOrders } from '@/contexts/OrderContext'
+
 export default function Cart() {
-    const { cart, removeFromCart, applyPromoCode, total, subtotal, discountTotal } = useCart()
+    const { cart, removeFromCart, applyPromoCode, total, subtotal, discountTotal, clearCart } = useCart()
     const { user } = useAuth()
+    const { addOrder } = useOrders()
     const { initializePayment, loading } = useRazorpay()
     const [promoInput, setPromoInput] = useState('')
     const navigate = useNavigate()
@@ -30,8 +33,12 @@ export default function Cart() {
             image: '/favicon.ico',
             handler: (response) => {
                 console.log(response)
-                // Handle success (e.g., save order to DB, clear cart)
-                navigate('/success')
+                // Save order
+                addOrder(cart, total)
+                // Clear cart
+                clearCart()
+                // Navigate to orders page
+                navigate('/orders')
             },
             prefill: {
                 name: user.display_name,

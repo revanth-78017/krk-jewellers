@@ -98,6 +98,15 @@ export default function Navigation() {
                                     </span>
                                 )}
                             </Link>
+                            {user && (
+                                <Link
+                                    to="/orders"
+                                    className={`text-sm font-medium transition-colors hover:text-primary ${location.pathname === '/orders' ? 'text-primary' : 'text-muted-foreground'
+                                        }`}
+                                >
+                                    My Orders
+                                </Link>
+                            )}
                             {isAdmin && (
                                 <Link
                                     to="/admin"
@@ -161,22 +170,6 @@ export default function Navigation() {
                                     >
                                         {link.label}
                                     </Link>
-                                ))}
-                                <Link
-                                    to="/cart"
-                                    onClick={() => setMobileMenuOpen(false)}
-                                    className="block py-2 text-foreground/80 hover:text-foreground transition-colors"
-                                >
-                                    Cart ({cart.length})
-                                </Link>
-                                {isAdmin && (
-                                    <Link
-                                        to="/admin"
-                                        onClick={() => setMobileMenuOpen(false)}
-                                        className="block py-2 text-primary hover:text-primary/80 transition-colors"
-                                    >
-                                        Admin
-                                    </Link>
                                 )}
                                 <div className="pt-3 border-t space-y-3">
                                     <Button
@@ -201,7 +194,7 @@ export default function Navigation() {
                         </motion.div>
                     )}
                 </AnimatePresence>
-            </nav>
+            </nav >
         </>
     )
 }
