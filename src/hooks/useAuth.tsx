@@ -1,5 +1,7 @@
 import { createContext, useContext, useEffect, useState } from 'react'
 import { toast } from 'sonner'
+import { supabase } from '@/integrations/supabase/client'
+import { Session, User as SupabaseUser } from '@supabase/supabase-js'
 
 // Mock User Interface
 export interface User {
@@ -12,8 +14,10 @@ export interface User {
 
 interface AuthContextType {
     user: User | null
+    session: Session | null
     signIn: (email: string, password: string) => Promise<{ role?: 'admin' | 'user' }>
     signUp: (email: string, password: string, displayName?: string, phoneNumber?: string) => Promise<void>
+    signInWithGoogle: () => Promise<void>
     signOut: () => Promise<void>
     loading: boolean
 }
@@ -22,52 +26,87 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [user, setUser] = useState<User | null>(null)
+    const [session, setSession] = useState<Session | null>(null)
     const [loading, setLoading] = useState(true)
 
     useEffect(() => {
-        // Check local storage for existing session
-        const storedUser = localStorage.getItem('krk_user')
-        if (storedUser) {
-            setUser(JSON.parse(storedUser))
-        }
-        setLoading(false)
+        // Get initial session
+        supabase.auth.getSession().then(({ data: { session } }) => {
+            setSession(session)
+            if (session?.user) {
+                mapSupabaseUser(session.user)
+            } else {
+                setLoading(false)
+            }
+        })
+
+        // Listen for auth changes
+        const {
+            data: { subscription },
+        } = supabase.auth.onAuthStateChange((_event, session) => {
+            setSession(session)
+            if (session?.user) {
+                mapSupabaseUser(session.user)
+            } else {
+                setUser(null)
+                setLoading(false)
+            }
+        })
+
+        return () => subscription.unsubscribe()
     }, [])
+
+    const mapSupabaseUser = (supabaseUser: SupabaseUser) => {
+        const user: User = {
+            id: supabaseUser.id,
+            email: supabaseUser.email || '',
+            display_name: supabaseUser.user_metadata.display_name || supabaseUser.user_metadata.full_name,
+            phone_number: supabaseUser.phone,
+            role: supabaseUser.user_metadata.role || 'user'
+        }
+        setUser(user)
+        setLoading(false)
+    }
 
     const signIn = async (email: string, password: string) => {
         setLoading(true)
         try {
-            // Simulate network delay
-            await new Promise(resolve => setTimeout(resolve, 500))
+            const { data, error } = await supabase.auth.signInWithPassword({
+                email,
+                password,
+            })
 
-            // Hardcoded Admin Check
-            if (email === 'admin@krk.com' && password === 'admin123') {
-                const adminUser: User = {
-                    id: 'admin-123',
-                    email: 'admin@krk.com',
-                    display_name: 'Admin',
-                    role: 'admin'
-                }
-                setUser(adminUser)
-                localStorage.setItem('krk_user', JSON.stringify(adminUser))
+            if (error) throw error
+
+            // Check if admin (this logic might need to be server-side or in user metadata in a real app)
+            // For now, we'll assume admin role is stored in metadata or we check specific email
+            if (email === 'admin@krk.com') {
                 toast.success('Welcome back, Admin!')
                 return { role: 'admin' as const }
             }
 
-            // Check for registered users in local storage
-            const users = JSON.parse(localStorage.getItem('krk_users') || '[]')
-            const foundUser = users.find((u: any) => u.email === email && u.password === password)
-
-            if (foundUser) {
-                const { password, ...userWithoutPassword } = foundUser
-                setUser(userWithoutPassword)
-                localStorage.setItem('krk_user', JSON.stringify(userWithoutPassword))
-                toast.success('Signed in successfully!')
-                return { role: foundUser.role }
-            } else {
-                throw new Error('Invalid email or password')
-            }
+            toast.success('Signed in successfully!')
+            return { role: data.user?.user_metadata?.role || 'user' }
         } catch (error: any) {
             toast.error(error.message || 'Failed to sign in')
+            throw error
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    const signInWithGoogle = async () => {
+        setLoading(true)
+        try {
+            const { error } = await supabase.auth.signInWithOAuth({
+                provider: 'google',
+                options: {
+                    redirectTo: `${window.location.origin}/auth`
+                }
+            })
+            if (error) throw error
+        } catch (error: any) {
+            toast.error(error.message || 'Failed to sign in with Google')
             throw error
         } finally {
             setLoading(false)
@@ -82,32 +121,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     ) => {
         setLoading(true)
         try {
-            await new Promise(resolve => setTimeout(resolve, 500))
-
-            const users = JSON.parse(localStorage.getItem('krk_users') || '[]')
-
-            if (users.some((u: any) => u.email === email)) {
-                throw new Error('User already exists')
-            }
-
-            const newUser = {
-                id: Math.random().toString(36).substring(2, 11),
+            const { error } = await supabase.auth.signUp({
                 email,
-                password, // In a real app, never store passwords plainly!
-                display_name: displayName,
-                phone_number: phoneNumber,
-                role: 'user' as 'admin' | 'user'
-            }
+                password,
+                options: {
+                    data: {
+                        display_name: displayName,
+                        phone_number: phoneNumber,
+                        role: 'user'
+                    }
+                }
+            })
 
-            users.push(newUser)
-            localStorage.setItem('krk_users', JSON.stringify(users))
+            if (error) throw error
 
-            // Auto sign in
-            const { password: _, ...userWithoutPassword } = newUser
-            setUser(userWithoutPassword)
-            localStorage.setItem('krk_user', JSON.stringify(userWithoutPassword))
-
-            toast.success('Account created successfully!')
+            toast.success('Account created successfully! Please check your email.')
         } catch (error: any) {
             toast.error(error.message || 'Failed to sign up')
             throw error
@@ -117,13 +145,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     const signOut = async () => {
-        setUser(null)
-        localStorage.removeItem('krk_user')
-        toast.success('Signed out successfully!')
+        try {
+            const { error } = await supabase.auth.signOut()
+            if (error) throw error
+            setUser(null)
+            setSession(null)
+            toast.success('Signed out successfully!')
+        } catch (error: any) {
+            toast.error(error.message || 'Failed to sign out')
+        }
     }
 
     return (
-        <AuthContext.Provider value={{ user, signIn, signUp, signOut, loading }}>
+        <AuthContext.Provider value={{ user, session, signIn, signUp, signInWithGoogle, signOut, loading }}>
             {children}
         </AuthContext.Provider>
     )
