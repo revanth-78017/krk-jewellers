@@ -94,12 +94,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             }
 
             const newUser = {
-                id: Math.random().toString(36).substr(2, 9),
+                id: Math.random().toString(36).substring(2, 11),
                 email,
                 password, // In a real app, never store passwords plainly!
                 display_name: displayName,
                 phone_number: phoneNumber,
-                role: 'user'
+                role: 'user' as 'admin' | 'user'
             }
 
             users.push(newUser)
