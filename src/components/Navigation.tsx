@@ -1,4 +1,4 @@
-import { Link, useLocation } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
 import { useAdmin } from '@/hooks/useAdmin'
 import { useCart } from '@/contexts/CartContext'
@@ -10,6 +10,7 @@ import { MarketService, MarketRate } from '@/services/MarketService'
 
 export default function Navigation() {
     const { user, signOut } = useAuth()
+    const navigate = useNavigate()
     const { isAdmin } = useAdmin()
     const { cart } = useCart()
     const [isDark, setIsDark] = useState(false)
@@ -30,6 +31,11 @@ export default function Navigation() {
     const toggleTheme = () => {
         setIsDark(!isDark)
         document.documentElement.classList.toggle('dark')
+    }
+
+    const handleSignOut = async () => {
+        await signOut()
+        navigate('/auth')
     }
 
     const navLinks = [
@@ -114,7 +120,7 @@ export default function Navigation() {
                             </Button>
 
                             {user ? (
-                                <Button onClick={signOut} variant="outline" className="hidden sm:inline-flex">
+                                <Button onClick={handleSignOut} variant="outline" className="hidden sm:inline-flex">
                                     Sign Out
                                 </Button>
                             ) : (
@@ -182,7 +188,7 @@ export default function Navigation() {
                                         {isDark ? 'Light Mode' : 'Dark Mode'}
                                     </Button>
                                     {user ? (
-                                        <Button onClick={signOut} variant="outline" className="w-full">
+                                        <Button onClick={handleSignOut} variant="outline" className="w-full">
                                             Sign Out
                                         </Button>
                                     ) : (

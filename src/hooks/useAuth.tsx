@@ -1,5 +1,4 @@
 import { createContext, useContext, useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 
 // Mock User Interface
@@ -13,7 +12,7 @@ export interface User {
 
 interface AuthContextType {
     user: User | null
-    signIn: (email: string, password: string) => Promise<void>
+    signIn: (email: string, password: string) => Promise<{ role?: 'admin' | 'user' }>
     signUp: (email: string, password: string, displayName?: string, phoneNumber?: string) => Promise<void>
     signOut: () => Promise<void>
     loading: boolean
@@ -24,7 +23,6 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [user, setUser] = useState<User | null>(null)
     const [loading, setLoading] = useState(true)
-    const navigate = useNavigate()
 
     useEffect(() => {
         // Check local storage for existing session
@@ -52,8 +50,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 setUser(adminUser)
                 localStorage.setItem('krk_user', JSON.stringify(adminUser))
                 toast.success('Welcome back, Admin!')
-                navigate('/admin')
-                return
+                return { role: 'admin' as const }
             }
 
             // Check for registered users in local storage
@@ -65,7 +62,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 setUser(userWithoutPassword)
                 localStorage.setItem('krk_user', JSON.stringify(userWithoutPassword))
                 toast.success('Signed in successfully!')
-                navigate('/')
+                return { role: foundUser.role }
             } else {
                 throw new Error('Invalid email or password')
             }
@@ -111,7 +108,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             localStorage.setItem('krk_user', JSON.stringify(userWithoutPassword))
 
             toast.success('Account created successfully!')
-            navigate('/')
         } catch (error: any) {
             toast.error(error.message || 'Failed to sign up')
             throw error
@@ -124,7 +120,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(null)
         localStorage.removeItem('krk_user')
         toast.success('Signed out successfully!')
-        navigate('/auth')
     }
 
     return (

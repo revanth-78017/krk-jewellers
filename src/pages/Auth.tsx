@@ -4,10 +4,11 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { toast } from 'sonner'
-import { Navigate } from 'react-router-dom'
+import { Navigate, useNavigate } from 'react-router-dom'
 
 export default function Auth() {
     const { user, signIn, signUp } = useAuth()
+    const navigate = useNavigate()
     const [isSignUp, setIsSignUp] = useState(false)
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
@@ -31,8 +32,14 @@ export default function Auth() {
         try {
             if (isSignUp) {
                 await signUp(email, password, displayName, phoneNumber)
+                navigate('/')
             } else {
-                await signIn(email, password)
+                const result = await signIn(email, password)
+                if (result.role === 'admin') {
+                    navigate('/admin')
+                } else {
+                    navigate('/')
+                }
             }
         } catch (error) {
             // Error is handled in the auth hook
