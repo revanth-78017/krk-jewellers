@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { MarketService, HistoricalData } from '@/services/MarketService'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts'
-import { TrendingUp, TrendingDown, Info } from 'lucide-react'
+import { TrendingUp, Info } from 'lucide-react'
 
 export default function MarketTrends() {
     const [historicalData, setHistoricalData] = useState<HistoricalData[]>([])

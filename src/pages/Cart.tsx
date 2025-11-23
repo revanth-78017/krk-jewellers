@@ -4,7 +4,6 @@ import { Input } from '@/components/ui/input'
 import { Card, CardContent } from '@/components/ui/card'
 import { Trash2, ShoppingBag, ArrowRight, Tag } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
-import { toast } from 'sonner'
 import { useState } from 'react'
 
 export default function Cart() {
