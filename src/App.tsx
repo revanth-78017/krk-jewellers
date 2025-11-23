@@ -5,7 +5,29 @@ import { ProductProvider } from '@/contexts/ProductContext'
 import { OrderProvider } from '@/contexts/OrderContext'
 import MyOrders from '@/pages/MyOrders'
 
-// ... (imports)
+import { CartProvider } from '@/contexts/CartContext'
+import { Toaster } from 'sonner'
+import Navigation from '@/components/Navigation'
+import Index from '@/pages/Index'
+import Gallery from '@/pages/Gallery'
+import Design from '@/pages/Design'
+import Customize from '@/pages/Customize'
+import Auth from '@/pages/Auth'
+import Admin from '@/pages/Admin'
+import Showcase from '@/pages/Showcase'
+import Cart from '@/pages/Cart'
+import Payment from '@/pages/Payment'
+import MarketTrends from '@/pages/MarketTrends'
+import NotFound from '@/pages/NotFound'
+
+const queryClient = new QueryClient({
+    defaultOptions: {
+        queries: {
+            staleTime: 1000 * 60 * 5, // 5 minutes
+            retry: 1,
+        },
+    },
+})
 
 function App() {
     return (
