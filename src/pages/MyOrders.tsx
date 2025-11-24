@@ -2,10 +2,32 @@ import { useOrders } from '@/contexts/OrderContext'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Link } from 'react-router-dom'
-import { ShoppingBag, Clock } from 'lucide-react'
+import { ShoppingBag, Clock, Download, Truck } from 'lucide-react'
+import { generateInvoice } from '@/utils/invoiceGenerator'
+import { useAuth } from '@/hooks/useAuth'
 
 export default function MyOrders() {
     const { orders } = useOrders()
+    const { user } = useAuth()
+
+    const handleDownloadInvoice = (order: typeof orders[0]) => {
+        if (!user) return
+
+        const subtotal = order.total / 1.03 // Reverse calculate subtotal (assuming 3% tax)
+        const tax = order.total - subtotal
+
+        generateInvoice({
+            invoiceNumber: order.invoiceNumber,
+            orderDate: order.date,
+            estimatedDelivery: order.estimatedDelivery,
+            customerName: user.display_name || 'Valued Customer',
+            customerEmail: user.email || '',
+            items: order.items,
+            subtotal: Math.round(subtotal),
+            tax: Math.round(tax),
+            total: order.total
+        })
+    }
 
     if (orders.length === 0) {
         return (
@@ -28,17 +50,33 @@ export default function MyOrders() {
                 <div className="space-y-6">
                     {orders.map(order => (
                         <Card key={order.id} className="border-gold/20 overflow-hidden">
-                            <CardHeader className="bg-muted/30 border-b border-gold/10 flex flex-row items-center justify-between">
-                                <div>
-                                    <CardTitle className="font-playfair text-lg">Order #{order.id}</CardTitle>
-                                    <p className="text-sm text-muted-foreground flex items-center mt-1">
-                                        <Clock className="w-3 h-3 mr-1" /> {order.date}
-                                    </p>
-                                </div>
-                                <div className="text-right">
-                                    <div className="font-bold text-primary">₹{order.total.toLocaleString()}</div>
-                                    <div className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded mt-1 inline-block">
-                                        {order.status}
+                            <CardHeader className="bg-muted/30 border-b border-gold/10">
+                                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                                    <div>
+                                        <CardTitle className="font-playfair text-lg">Order #{order.id}</CardTitle>
+                                        <div className="flex flex-col gap-1 mt-2">
+                                            <p className="text-sm text-muted-foreground flex items-center">
+                                                <Clock className="w-3 h-3 mr-1" /> Ordered: {order.date}
+                                            </p>
+                                            <p className="text-sm text-muted-foreground flex items-center">
+                                                <Truck className="w-3 h-3 mr-1" /> Est. Delivery: {order.estimatedDelivery}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div className="flex flex-col md:items-end gap-2">
+                                        <div className="font-bold text-primary text-xl">₹{order.total.toLocaleString()}</div>
+                                        <div className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded inline-block">
+                                            {order.status}
+                                        </div>
+                                        <Button
+                                            size="sm"
+                                            variant="outline"
+                                            className="border-gold/50 hover:bg-gold/10"
+                                            onClick={() => handleDownloadInvoice(order)}
+                                        >
+                                            <Download className="w-4 h-4 mr-2" />
+                                            Download Invoice
+                                        </Button>
                                     </div>
                                 </div>
                             </CardHeader>

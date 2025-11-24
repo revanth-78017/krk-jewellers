@@ -11,7 +11,10 @@ export interface OrderItem {
 
 export interface Order {
     id: string
+    invoiceNumber: string
     date: string
+    orderTimestamp: number
+    estimatedDelivery: string
     total: number
     items: OrderItem[]
     status: 'Processing' | 'Shipped' | 'Delivered'
@@ -45,9 +48,19 @@ export function OrderProvider({ children }: { children: React.ReactNode }) {
     const addOrder = (items: OrderItem[], total: number) => {
         if (!user) return
 
+        const orderTimestamp = Date.now()
+        const orderDate = new Date(orderTimestamp)
+        const deliveryDate = new Date(orderTimestamp + 7 * 24 * 60 * 60 * 1000) // 7 days later
+
+        const orderId = Math.random().toString(36).substr(2, 9).toUpperCase()
+        const invoiceNumber = `INV-${orderId}`
+
         const newOrder: Order = {
-            id: Math.random().toString(36).substr(2, 9).toUpperCase(),
-            date: new Date().toLocaleDateString(),
+            id: orderId,
+            invoiceNumber,
+            date: orderDate.toLocaleDateString(),
+            orderTimestamp,
+            estimatedDelivery: deliveryDate.toLocaleDateString(),
             total,
             items,
             status: 'Processing'
