@@ -56,7 +56,7 @@ export default function Navigation() {
                         {rates.map((rate, index) => (
                             <span key={index} className="flex items-center gap-1 text-white">
                                 {rate.metal} {rate.purity ? `(${rate.purity})` : ''}:
-                                <span className="font-mono">₹{rate.price.toLocaleString()}</span>
+                                <span className="font-mono">₹{rate.price.toLocaleString()}{rate.metal === 'Gold' ? '/g' : '/kg'}</span>
                                 {rate.trend === 'up' ? <TrendingUp size={12} className="text-green-500" /> : <TrendingDown size={12} className="text-red-500" />}
                             </span>
                         ))}

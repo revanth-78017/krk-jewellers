@@ -24,6 +24,23 @@ export default function Admin() {
         promoCode: '',
         discount: ''
     })
+    const [imageFile, setImageFile] = useState<File | null>(null)
+    const [imagePreview, setImagePreview] = useState<string>('')
+
+    const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0]
+        if (file) {
+            setImageFile(file)
+            // Create preview
+            const reader = new FileReader()
+            reader.onloadend = () => {
+                const result = reader.result as string
+                setImagePreview(result)
+                setNewProduct({ ...newProduct, image: result })
+            }
+            reader.readAsDataURL(file)
+        }
+    }
 
     useEffect(() => {
         if (!loading) {
@@ -43,6 +60,8 @@ export default function Admin() {
             discount: newProduct.discount ? Number(newProduct.discount) : undefined
         })
         setNewProduct({ name: '', description: '', price: '', image: '', category: '', promoCode: '', discount: '' })
+        setImageFile(null)
+        setImagePreview('')
     }
 
     if (loading) return <div className="min-h-screen flex items-center justify-center">Loading...</div>
@@ -111,13 +130,66 @@ export default function Admin() {
                                     />
                                 </div>
                                 <div>
-                                    <label className="text-sm font-medium mb-1 block">Image URL</label>
-                                    <Input
-                                        value={newProduct.image}
-                                        onChange={e => setNewProduct({ ...newProduct, image: e.target.value })}
-                                        required
-                                        placeholder="https://..."
-                                    />
+                                    <label className="text-sm font-medium mb-1 block">Product Image</label>
+
+                                    {/* Image Preview */}
+                                    {imagePreview && (
+                                        <div className="mb-3 relative">
+                                            <img
+                                                src={imagePreview}
+                                                alt="Preview"
+                                                className="w-full h-48 object-cover rounded-lg border-2 border-gold/20"
+                                            />
+                                            <Button
+                                                type="button"
+                                                size="sm"
+                                                variant="destructive"
+                                                className="absolute top-2 right-2"
+                                                onClick={() => {
+                                                    setImageFile(null)
+                                                    setImagePreview('')
+                                                    setNewProduct({ ...newProduct, image: '' })
+                                                }}
+                                            >
+                                                Remove
+                                            </Button>
+                                        </div>
+                                    )}
+
+                                    {/* Upload Button */}
+                                    <div className="space-y-2">
+                                        <label className="block">
+                                            <div className="cursor-pointer">
+                                                <Button
+                                                    type="button"
+                                                    variant="outline"
+                                                    className="w-full border-gold/50 hover:bg-gold/10"
+                                                    onClick={() => document.getElementById('image-upload')?.click()}
+                                                >
+                                                    📁 Upload from Computer
+                                                </Button>
+                                                <input
+                                                    id="image-upload"
+                                                    type="file"
+                                                    accept="image/*"
+                                                    className="hidden"
+                                                    onChange={handleImageUpload}
+                                                />
+                                            </div>
+                                        </label>
+
+                                        <div className="text-center text-xs text-muted-foreground">OR</div>
+
+                                        {/* URL Input */}
+                                        <Input
+                                            value={newProduct.image}
+                                            onChange={e => {
+                                                setNewProduct({ ...newProduct, image: e.target.value })
+                                                setImagePreview(e.target.value)
+                                            }}
+                                            placeholder="Paste image URL"
+                                        />
+                                    </div>
                                 </div>
                                 <div>
                                     <label className="text-sm font-medium mb-1 block">Description</label>

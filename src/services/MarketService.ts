@@ -1,7 +1,7 @@
 export interface MarketRate {
     metal: 'Gold' | 'Silver'
     purity?: '24K' | '22K'
-    price: number // Price per 10g for Gold, per 1kg for Silver
+    price: number // Price per 1g for Gold, per 1kg for Silver
     change: number // Percentage change
     trend: 'up' | 'down' | 'neutral'
 }
@@ -13,9 +13,9 @@ export interface HistoricalData {
 }
 
 // Base prices (current market rates as of Nov 24, 2025)
-// Gold: Rs 12,678 per gram (24K) = Rs 126,780 per 10g
+// Gold: Rs 12,678 per gram (24K)
 // Silver: Rs 157,950 per kg
-const BASE_GOLD_24K = 126780; // per 10g
+const BASE_GOLD_24K = 12678; // per 1g
 const BASE_SILVER = 157950; // per 1kg
 
 export const MarketService = {
@@ -23,7 +23,7 @@ export const MarketService = {
         return new Promise((resolve) => {
             // Simulate network delay
             setTimeout(() => {
-                const fluctuation = () => (Math.random() - 0.5) * 100;
+                const fluctuation = () => (Math.random() - 0.5) * 10;
 
                 const gold24k = BASE_GOLD_24K + fluctuation() * 5;
                 const gold22k = gold24k * 0.916;
