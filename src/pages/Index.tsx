@@ -1,13 +1,82 @@
 import { Link } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { motion } from 'framer-motion'
+import { useState, useEffect } from 'react'
 
 export default function Index() {
+    const [scrollY, setScrollY] = useState(0)
+
+    useEffect(() => {
+        const handleScroll = () => {
+            setScrollY(window.scrollY)
+        }
+        window.addEventListener('scroll', handleScroll)
+        return () => window.removeEventListener('scroll', handleScroll)
+    }, [])
+
+    // Calculate rotation based on scroll
+    const rotateX = scrollY * 0.1
+    const rotateY = scrollY * 0.2
+    const scale = 1 + (scrollY * 0.001)
+
     return (
         <div className="min-h-screen">
-            {/* Hero Section */}
-            <section className="relative py-20 px-4 overflow-hidden">
-                <div className="absolute inset-0 gradient-luxury opacity-10" />
+            {/* Hero Section with 3D Background */}
+            <section className="relative py-20 px-4 overflow-hidden min-h-[600px] flex items-center">
+                {/* 3D Jewelry Background */}
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <div
+                        className="relative w-[500px] h-[500px]"
+                        style={{
+                            transform: `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale(${scale})`,
+                            transition: 'transform 0.1s ease-out'
+                        }}
+                    >
+                        {/* Ring 1 */}
+                        <motion.img
+                            src="https://images.unsplash.com/photo-1605100804763-247f67b3557e?q=80&w=600&auto=format&fit=crop"
+                            alt="Ring"
+                            className="absolute top-0 left-0 w-64 h-64 object-contain opacity-20"
+                            style={{
+                                transform: `translateZ(50px) rotateZ(${scrollY * 0.3}deg)`,
+                            }}
+                        />
+
+                        {/* Necklace */}
+                        <motion.img
+                            src="https://images.unsplash.com/photo-1599643478518-17488fbbcd75?q=80&w=600&auto=format&fit=crop"
+                            alt="Necklace"
+                            className="absolute top-1/4 right-0 w-72 h-72 object-contain opacity-15"
+                            style={{
+                                transform: `translateZ(-30px) rotateZ(${-scrollY * 0.2}deg)`,
+                            }}
+                        />
+
+                        {/* Ring 2 */}
+                        <motion.img
+                            src="https://images.unsplash.com/photo-1603561591411-07134e71a2a9?q=80&w=600&auto=format&fit=crop"
+                            alt="Diamond Ring"
+                            className="absolute bottom-0 left-1/4 w-56 h-56 object-contain opacity-25"
+                            style={{
+                                transform: `translateZ(80px) rotateZ(${scrollY * 0.15}deg)`,
+                            }}
+                        />
+
+                        {/* Bracelet */}
+                        <motion.img
+                            src="https://images.unsplash.com/photo-1611591437281-460bfbe1220a?q=80&w=600&auto=format&fit=crop"
+                            alt="Bracelet"
+                            className="absolute bottom-1/4 right-1/4 w-48 h-48 object-contain opacity-20"
+                            style={{
+                                transform: `translateZ(-50px) rotateZ(${-scrollY * 0.25}deg)`,
+                            }}
+                        />
+                    </div>
+                </div>
+
+                {/* Gradient Overlay */}
+                <div className="absolute inset-0 bg-gradient-to-b from-background via-background/50 to-background" />
+
                 <div className="container mx-auto max-w-6xl relative z-10">
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
