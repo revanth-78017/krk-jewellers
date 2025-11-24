@@ -30,7 +30,7 @@ export default function FinalizeDesign({ category, selections, onBack }: Finaliz
 
     const handleAddToCart = () => {
         addToCart({
-            id: Math.random().toString(36).substr(2, 9),
+            id: Math.random().toString(36).substring(2, 11),
             name: `Custom ${category.name}`,
             description: selectedOptions.map(s => s.option!.name).join(', '),
             price: totalPrice,

@@ -10,12 +10,18 @@ export interface Product {
     category: string
     promoCode?: string
     discount?: number // Percentage (0-100)
+    weight?: string
+    material?: string
+    stoneWeight?: string
+    makingCharges?: number
+    gst?: number
 }
 
 interface ProductContextType {
     products: Product[]
     addProduct: (product: Omit<Product, 'id'>) => void
     deleteProduct: (id: string) => void
+    getProduct: (id: string) => Product | undefined
 }
 
 const ProductContext = createContext<ProductContextType | undefined>(undefined)
@@ -34,25 +40,40 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
                     id: '1',
                     name: 'Royal Diamond Necklace',
                     description: 'Exquisite diamond necklace suitable for royalty.',
-                    price: 12000,
+                    price: 145000,
                     image: 'https://images.unsplash.com/photo-1599643478518-17488fbbcd75?q=80&w=1974&auto=format&fit=crop',
-                    category: 'Necklaces'
+                    category: 'Necklaces',
+                    weight: '25.5g',
+                    material: '18KT Gold',
+                    stoneWeight: '2.5 ct',
+                    makingCharges: 15000,
+                    gst: 4350
                 },
                 {
                     id: '2',
                     name: 'Gold Bridal Ring',
                     description: '24k Gold ring with intricate design.',
-                    price: 8500,
+                    price: 45000,
                     image: 'https://images.unsplash.com/photo-1605100804763-247f67b3557e?q=80&w=2070&auto=format&fit=crop',
-                    category: 'Rings'
+                    category: 'Rings',
+                    weight: '8.2g',
+                    material: '24KT Gold',
+                    stoneWeight: '0 ct',
+                    makingCharges: 4000,
+                    gst: 1350
                 },
                 {
                     id: '3',
                     name: 'Vintage Pearl Earrings',
                     description: 'Classic pearl earrings with a vintage touch.',
-                    price: 4500,
+                    price: 12500,
                     image: 'https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?q=80&w=1974&auto=format&fit=crop',
-                    category: 'Earrings'
+                    category: 'Earrings',
+                    weight: '4.5g',
+                    material: '18KT Gold',
+                    stoneWeight: 'Pearl',
+                    makingCharges: 2000,
+                    gst: 375
                 }
             ]
             setProducts(initialProducts)
@@ -61,7 +82,7 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
     }, [])
 
     const addProduct = (product: Omit<Product, 'id'>) => {
-        const newProduct = { ...product, id: Math.random().toString(36).substr(2, 9) }
+        const newProduct = { ...product, id: Math.random().toString(36).substring(2, 11) }
         setProducts(prev => {
             const updated = [...prev, newProduct]
             localStorage.setItem('krk_products', JSON.stringify(updated))
@@ -79,8 +100,10 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
         toast.success('Product deleted successfully!')
     }
 
+    const getProduct = (id: string) => products.find(p => p.id === id)
+
     return (
-        <ProductContext.Provider value={{ products, addProduct, deleteProduct }}>
+        <ProductContext.Provider value={{ products, addProduct, deleteProduct, getProduct }}>
             {children}
         </ProductContext.Provider>
     )

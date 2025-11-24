@@ -52,7 +52,7 @@ export function OrderProvider({ children }: { children: React.ReactNode }) {
         const orderDate = new Date(orderTimestamp)
         const deliveryDate = new Date(orderTimestamp + 7 * 24 * 60 * 60 * 1000) // 7 days later
 
-        const orderId = Math.random().toString(36).substr(2, 9).toUpperCase()
+        const orderId = Math.random().toString(36).substring(2, 11).toUpperCase()
         const invoiceNumber = `INV-${orderId}`
 
         const newOrder: Order = {

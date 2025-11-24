@@ -21,14 +21,13 @@ interface CartContextType {
 const CartContext = createContext<CartContextType | undefined>(undefined)
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
-    const [cart, setCart] = useState<CartItem[]>([])
-
-    useEffect(() => {
+    const [cart, setCart] = useState<CartItem[]>(() => {
         const storedCart = localStorage.getItem('krk_cart')
-        if (storedCart) {
-            setCart(JSON.parse(storedCart))
-        }
-    }, [])
+        return storedCart ? JSON.parse(storedCart) : []
+    })
+
+    // Removed redundant useEffect for loading cart
+
 
     useEffect(() => {
         localStorage.setItem('krk_cart', JSON.stringify(cart))

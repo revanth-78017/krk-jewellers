@@ -7,21 +7,52 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { CreditCard, QrCode, CheckCircle } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
+import emailjs from 'emailjs-com'
 
 export default function Payment() {
     const { total, clearCart } = useCart()
     const navigate = useNavigate()
     const [loading, setLoading] = useState(false)
 
-    const handlePayment = () => {
+    const handlePayment = async () => {
         setLoading(true)
-        // Simulate payment processing
-        setTimeout(() => {
-            setLoading(false)
+
+        // EmailJS Configuration
+        // REPLACE THESE WITH YOUR ACTUAL KEYS FROM EMAILJS DASHBOARD
+        const SERVICE_ID = 'service_gmail' // Example: service_x9...
+        const TEMPLATE_ID = 'template_order_confirm' // Example: template_y8...
+        const PUBLIC_KEY = 'YOUR_PUBLIC_KEY' // Example: user_z7...
+
+        const orderDetails = {
+            to_name: "Customer", // You would typically get this from user input
+            order_total: total,
+            message: "Your order has been successfully placed!",
+            reply_to: "support@krkjewellers.com"
+        }
+
+        try {
+            // Simulate payment processing
+            await new Promise(resolve => setTimeout(resolve, 2000))
+
+            // Send Email
+            // Note: This will fail without valid keys, so we wrap in try/catch to not block the flow
+            try {
+                await emailjs.send(SERVICE_ID, TEMPLATE_ID, orderDetails, PUBLIC_KEY)
+                toast.success('Order confirmation email sent!')
+            } catch (emailError) {
+                console.error('Email failed to send:', emailError)
+                // We don't block the success flow if email fails, just log it
+                // In production, you might want to handle this differently
+            }
+
             toast.success('Payment successful! Order placed.')
             clearCart()
             navigate('/')
-        }, 2000)
+        } catch (error) {
+            toast.error('Payment failed. Please try again.')
+        } finally {
+            setLoading(false)
+        }
     }
 
     if (total === 0) {

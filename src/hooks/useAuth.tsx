@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState } from 'react'
+import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
 import { useUser, useClerk, useSession } from '@clerk/clerk-react'
 
 export interface User {
@@ -18,7 +18,7 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
+export function AuthProvider({ children }: { children: ReactNode }) {
     const { user: clerkUser, isLoaded: isUserLoaded } = useUser()
     const { session } = useSession()
     const { signOut } = useClerk()
