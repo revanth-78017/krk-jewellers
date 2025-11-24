@@ -55,12 +55,12 @@ export const generateInvoice = (data: InvoiceData) => {
     doc.text(data.customerName, 20, 99)
     doc.text(data.customerEmail, 20, 106)
 
-    // Items Table
+    // Items Table - Using "Rs" instead of rupee symbol
     const tableData = data.items.map(item => [
         item.name,
         item.quantity.toString(),
-        `₹${item.price.toLocaleString()}`,
-        `₹${(item.price * item.quantity).toLocaleString()}`
+        `Rs ${item.price.toLocaleString()}`,
+        `Rs ${(item.price * item.quantity).toLocaleString()}`
     ])
 
     autoTable(doc, {
@@ -85,15 +85,15 @@ export const generateInvoice = (data: InvoiceData) => {
     const totalsStartY = finalY + 10
     doc.setFont('helvetica', 'normal')
     doc.text('Subtotal:', 130, totalsStartY)
-    doc.text(`₹${data.subtotal.toLocaleString()}`, 180, totalsStartY, { align: 'right' })
+    doc.text(`Rs ${data.subtotal.toLocaleString()}`, 180, totalsStartY, { align: 'right' })
 
     doc.text('Tax (3%):', 130, totalsStartY + 7)
-    doc.text(`₹${data.tax.toLocaleString()}`, 180, totalsStartY + 7, { align: 'right' })
+    doc.text(`Rs ${data.tax.toLocaleString()}`, 180, totalsStartY + 7, { align: 'right' })
 
     doc.setFont('helvetica', 'bold')
     doc.setFontSize(12)
     doc.text('Total:', 130, totalsStartY + 17)
-    doc.text(`₹${data.total.toLocaleString()}`, 180, totalsStartY + 17, { align: 'right' })
+    doc.text(`Rs ${data.total.toLocaleString()}`, 180, totalsStartY + 17, { align: 'right' })
 
     // Payment Status
     doc.setFontSize(10)
