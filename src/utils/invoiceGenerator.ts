@@ -5,6 +5,7 @@ interface InvoiceItem {
     name: string
     quantity: number
     price: number
+    image: string
 }
 
 interface InvoiceData {
@@ -57,6 +58,7 @@ export const generateInvoice = (data: InvoiceData) => {
 
     // Items Table - Using "Rs" instead of rupee symbol
     const tableData = data.items.map(item => [
+        '', // Column 0: Image (placeholder, drawn manually)
         item.name,
         item.quantity.toString(),
         `Rs ${item.price.toLocaleString()}`,
@@ -65,7 +67,7 @@ export const generateInvoice = (data: InvoiceData) => {
 
     autoTable(doc, {
         startY: 120,
-        head: [['Item', 'Qty', 'Unit Price', 'Total']],
+        head: [['Image', 'Item', 'Qty', 'Unit Price', 'Total']],
         body: tableData,
         theme: 'striped',
         headStyles: {
@@ -74,7 +76,26 @@ export const generateInvoice = (data: InvoiceData) => {
             fontStyle: 'bold'
         },
         styles: {
-            fontSize: 10
+            fontSize: 10,
+            minCellHeight: 20, // Ensure space for image
+            valign: 'middle'
+        },
+        columnStyles: {
+            0: { cellWidth: 25 }, // Image column width
+        },
+        didDrawCell: (hookData) => {
+            if (hookData.section === 'body' && hookData.column.index === 0) {
+                const item = data.items[hookData.row.index]
+                if (item && item.image) {
+                    try {
+                        // Draw image inside the cell
+                        // Padding: 2
+                        doc.addImage(item.image, 'JPEG', hookData.cell.x + 2, hookData.cell.y + 2, 16, 16)
+                    } catch (e) {
+                        console.error('Error adding image to PDF:', e)
+                    }
+                }
+            }
         }
     })
 

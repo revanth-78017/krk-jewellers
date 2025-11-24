@@ -3,8 +3,6 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { AuthProvider } from '@/hooks/useAuth'
 import { ProductProvider } from '@/contexts/ProductContext'
 import { OrderProvider } from '@/contexts/OrderContext'
-import MyOrders from '@/pages/MyOrders'
-
 import { CartProvider } from '@/contexts/CartContext'
 import { Toaster } from 'sonner'
 import Navigation from '@/components/Navigation'
@@ -16,10 +14,12 @@ import Auth from '@/pages/Auth'
 import Admin from '@/pages/Admin'
 import Showcase from '@/pages/Showcase'
 import Cart from '@/pages/Cart'
+import MyOrders from '@/pages/MyOrders'
 import Payment from '@/pages/Payment'
 import MarketTrends from '@/pages/MarketTrends'
 import ProductDetails from '@/pages/ProductDetails'
 import NotFound from '@/pages/NotFound'
+import VirtualTryOn from '@/pages/VirtualTryOn'
 
 const queryClient = new QueryClient({
     defaultOptions: {
@@ -53,6 +53,7 @@ function App() {
                                         <Route path="/payment" element={<Payment />} />
                                         <Route path="/market-trends" element={<MarketTrends />} />
                                         <Route path="/product/:id" element={<ProductDetails />} />
+                                        <Route path="/try-on/:productId" element={<VirtualTryOn />} />
                                         <Route path="*" element={<NotFound />} />
                                     </Routes>
                                 </div>

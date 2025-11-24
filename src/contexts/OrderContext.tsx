@@ -17,12 +17,13 @@ export interface Order {
     estimatedDelivery: string
     total: number
     items: OrderItem[]
-    status: 'Processing' | 'Shipped' | 'Delivered'
+    status: 'Paid' | 'Processing' | 'Shipped' | 'Delivered'
 }
 
 interface OrderContextType {
     orders: Order[]
-    addOrder: (items: OrderItem[], total: number) => void
+    addOrder: (items: OrderItem[], total: number) => Order | null
+    updateStatus: (orderId: string, status: Order['status']) => void
 }
 
 const OrderContext = createContext<OrderContextType | undefined>(undefined)
@@ -45,8 +46,8 @@ export function OrderProvider({ children }: { children: React.ReactNode }) {
         }
     }, [user])
 
-    const addOrder = (items: OrderItem[], total: number) => {
-        if (!user) return
+    const addOrder = (items: OrderItem[], total: number): Order | null => {
+        if (!user) return null
 
         const orderTimestamp = Date.now()
         const orderDate = new Date(orderTimestamp)
@@ -63,16 +64,28 @@ export function OrderProvider({ children }: { children: React.ReactNode }) {
             estimatedDelivery: deliveryDate.toLocaleDateString(),
             total,
             items,
-            status: 'Processing'
+            status: 'Paid'
         }
 
         const updatedOrders = [newOrder, ...orders]
         setOrders(updatedOrders)
         localStorage.setItem(`orders_${user.id}`, JSON.stringify(updatedOrders))
+
+        return newOrder
+    }
+
+    const updateStatus = (orderId: string, status: Order['status']) => {
+        const updatedOrders = orders.map(order =>
+            order.id === orderId ? { ...order, status } : order
+        )
+        setOrders(updatedOrders)
+        if (user) {
+            localStorage.setItem(`orders_${user.id}`, JSON.stringify(updatedOrders))
+        }
     }
 
     return (
-        <OrderContext.Provider value={{ orders, addOrder }}>
+        <OrderContext.Provider value={{ orders, addOrder, updateStatus }}>
             {children}
         </OrderContext.Provider>
     )

@@ -25,11 +25,45 @@ export default function MyOrders() {
         })
     }
 
-    const handleDownloadInvoice = (order: typeof orders[0]) => {
+    const getBase64Image = async (url: string): Promise<string> => {
+        try {
+            // If it's already a data URL, return it
+            if (url.startsWith('data:')) return url
+
+            // If it's a relative URL, make it absolute
+            const fullUrl = url.startsWith('http') ? url : `${window.location.origin}${url}`
+
+            const response = await fetch(fullUrl)
+            const blob = await response.blob()
+
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader()
+                reader.onloadend = () => resolve(reader.result as string)
+                reader.onerror = reject
+                reader.readAsDataURL(blob)
+            })
+        } catch (error) {
+            console.error('Error converting image to base64:', error)
+            return '' // Return empty string on failure
+        }
+    }
+
+    const handleDownloadInvoice = async (order: typeof orders[0]) => {
         if (!user) return
 
         const subtotal = order.total / 1.03 // Reverse calculate subtotal (assuming 3% tax)
         const tax = order.total - subtotal
+
+        // Process items to get base64 images
+        const itemsWithImages = await Promise.all(order.items.map(async (item) => {
+            const base64Image = await getBase64Image(item.image)
+            return {
+                name: item.name,
+                quantity: item.quantity,
+                price: item.price,
+                image: base64Image
+            }
+        }))
 
         generateInvoice({
             invoiceNumber: order.invoiceNumber,
@@ -37,7 +71,7 @@ export default function MyOrders() {
             estimatedDelivery: order.estimatedDelivery,
             customerName: user.display_name || 'Valued Customer',
             customerEmail: user.email || '',
-            items: order.items,
+            items: itemsWithImages,
             subtotal: Math.round(subtotal),
             tax: Math.round(tax),
             total: order.total

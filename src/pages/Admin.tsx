@@ -24,19 +24,17 @@ export default function Admin() {
         promoCode: '',
         discount: ''
     })
-    const [imageFile, setImageFile] = useState<File | null>(null)
     const [imagePreview, setImagePreview] = useState<string>('')
 
     const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0]
         if (file) {
-            setImageFile(file)
             // Create preview
             const reader = new FileReader()
             reader.onloadend = () => {
                 const result = reader.result as string
                 setImagePreview(result)
-                setNewProduct({ ...newProduct, image: result })
+                setNewProduct(prev => ({ ...prev, image: result }))
             }
             reader.readAsDataURL(file)
         }
@@ -60,7 +58,6 @@ export default function Admin() {
             discount: newProduct.discount ? Number(newProduct.discount) : undefined
         })
         setNewProduct({ name: '', description: '', price: '', image: '', category: '', promoCode: '', discount: '' })
-        setImageFile(null)
         setImagePreview('')
     }
 
@@ -146,7 +143,6 @@ export default function Admin() {
                                                 variant="destructive"
                                                 className="absolute top-2 right-2"
                                                 onClick={() => {
-                                                    setImageFile(null)
                                                     setImagePreview('')
                                                     setNewProduct({ ...newProduct, image: '' })
                                                 }}

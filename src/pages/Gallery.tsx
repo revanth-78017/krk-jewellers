@@ -2,7 +2,7 @@ import { useProducts } from '@/contexts/ProductContext'
 import { useCart } from '@/contexts/CartContext'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardFooter } from '@/components/ui/card'
-import { ShoppingBag } from 'lucide-react'
+import { ShoppingBag, Camera } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { Link } from 'react-router-dom'
 
@@ -48,12 +48,21 @@ export default function Gallery() {
                                         <p className="text-sm text-muted-foreground">{product.description}</p>
                                     </CardContent>
                                 </Link>
-                                <CardFooter className="p-6 pt-0 mt-auto">
+                                <CardFooter className="p-6 pt-0 mt-auto grid grid-cols-2 gap-2">
+                                    <Button
+                                        variant="outline"
+                                        className="w-full border-gold/50 hover:bg-gold/10"
+                                        asChild
+                                    >
+                                        <Link to={`/try-on/${product.id}`}>
+                                            <Camera className="w-4 h-4 mr-2" /> Try On
+                                        </Link>
+                                    </Button>
                                     <Button
                                         className="w-full bg-gradient-gold text-black hover:opacity-90"
                                         onClick={() => addToCart(product)}
                                     >
-                                        <ShoppingBag className="w-4 h-4 mr-2" /> Add to Cart
+                                        <ShoppingBag className="w-4 h-4 mr-2" /> Add
                                     </Button>
                                 </CardFooter>
                             </Card>

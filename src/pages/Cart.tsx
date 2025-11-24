@@ -10,6 +10,9 @@ import { useAuth } from '@/hooks/useAuth'
 
 import { useOrders } from '@/contexts/OrderContext'
 
+import { toast } from 'sonner'
+import emailjs from 'emailjs-com'
+
 export default function Cart() {
     const { cart, removeFromCart, applyPromoCode, total, subtotal, discountTotal, clearCart } = useCart()
     const { user } = useAuth()
@@ -31,10 +34,108 @@ export default function Cart() {
             name: 'KRK Jewellers',
             description: 'Purchase from KRK Jewellers',
             image: '/favicon.ico',
-            handler: (response) => {
+            handler: async (response) => {
                 console.log(response)
-                // Save order
-                addOrder(cart, total)
+
+                // EmailJS Configuration
+                const SERVICE_ID = 'service_oc58tn9'
+                const TEMPLATE_ID = 'template_a0iza3s'
+                const PUBLIC_KEY = 'DcZjOXOD41nMuQuRI'
+
+                // Save order first to get ID
+                const newOrder = addOrder(cart, total)
+                if (!newOrder) {
+                    console.error('Failed to create order')
+                    return
+                }
+
+                // Format items for email (Text Version)
+                const itemsList = cart.map(item =>
+                    `${item.name} (Qty: ${item.quantity}) - ₹${item.price * item.quantity}`
+                ).join('\n')
+
+                // Format items for email (HTML Version for rich emails)
+                const itemsHtml = `
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <thead>
+                            <tr style="background-color: #f8f9fa;">
+                                <th style="padding: 10px; border: 1px solid #ddd;">Image</th>
+                                <th style="padding: 10px; border: 1px solid #ddd;">Product</th>
+                                <th style="padding: 10px; border: 1px solid #ddd;">Qty</th>
+                                <th style="padding: 10px; border: 1px solid #ddd;">Price</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${cart.map(item => `
+                                <tr>
+                                    <td style="padding: 10px; border: 1px solid #ddd; text-align: center;">
+                                        <img src="${window.location.origin}${item.image}" alt="${item.name}" style="width: 50px; height: 50px; object-fit: cover;" />
+                                    </td>
+                                    <td style="padding: 10px; border: 1px solid #ddd;">${item.name}</td>
+                                    <td style="padding: 10px; border: 1px solid #ddd; text-align: center;">${item.quantity}</td>
+                                    <td style="padding: 10px; border: 1px solid #ddd; text-align: right;">₹${item.price * item.quantity}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <td colspan="3" style="padding: 10px; border: 1px solid #ddd; text-align: right; font-weight: bold;">Total:</td>
+                                <td style="padding: 10px; border: 1px solid #ddd; text-align: right; font-weight: bold;">₹${total}</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                `
+
+                // Construct payload matching the user's Handlebars template
+                const templateOrders = cart.map(item => {
+                    let imageUrl = item.image
+                    if (!imageUrl.startsWith('data:') && !imageUrl.startsWith('http')) {
+                        imageUrl = `${window.location.origin}${imageUrl}`
+                    }
+
+                    return {
+                        name: item.name,
+                        units: item.quantity,
+                        price: item.price * item.quantity,
+                        image_url: imageUrl
+                    }
+                })
+
+                const templateCost = {
+                    shipping: "0.00",
+                    tax: "0.00",
+                    total: total
+                }
+
+                const orderDetails = {
+                    // Standard fields
+                    to_name: user.display_name || "Customer",
+                    to_email: user.email,
+                    email: user.email,
+
+                    // Template-specific fields
+                    order_id: newOrder.invoiceNumber,
+                    orders: templateOrders, // Array for {{#orders}}
+                    cost: templateCost,     // Object for {{cost.total}}
+
+                    // Fallbacks
+                    order_items: itemsList,
+                    order_html: itemsHtml,
+                    message: `Thank you for your order! Total Paid: ₹${total}\n\nItems:\n${itemsList}`,
+                    reply_to: "support@krkjewellers.com"
+                }
+
+                // Send Email
+                try {
+                    console.log('Sending email with details:', orderDetails)
+                    const emailResponse = await emailjs.send(SERVICE_ID, TEMPLATE_ID, orderDetails, PUBLIC_KEY)
+                    console.log('Email sent successfully:', emailResponse.status, emailResponse.text)
+                    toast.success('Order confirmation email sent!')
+                } catch (emailError: any) {
+                    console.error('Email failed to send:', emailError)
+                    toast.error('Failed to send email. Check console for details.')
+                }
+
                 // Clear cart
                 clearCart()
                 // Navigate to orders page
