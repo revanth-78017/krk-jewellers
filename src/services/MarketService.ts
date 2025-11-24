@@ -12,9 +12,11 @@ export interface HistoricalData {
     silver: number
 }
 
-// Base prices (approximate market rates)
-const BASE_GOLD_24K = 72500;
-const BASE_SILVER = 91000;
+// Base prices (current market rates as of Nov 24, 2025)
+// Gold: Rs 12,678 per gram (24K) = Rs 126,780 per 10g
+// Silver: Rs 157,950 per kg
+const BASE_GOLD_24K = 126780; // per 10g
+const BASE_SILVER = 157950; // per 1kg
 
 export const MarketService = {
     getLiveRates: (): Promise<MarketRate[]> => {
