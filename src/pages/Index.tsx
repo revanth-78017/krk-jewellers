@@ -1,7 +1,8 @@
 import { Link } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { motion } from 'framer-motion'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
+import JewelryScene from '@/components/JewelryScene'
 
 export default function Index() {
     const [scrollY, setScrollY] = useState(0)
@@ -14,72 +15,19 @@ export default function Index() {
         return () => window.removeEventListener('scroll', handleScroll)
     }, [])
 
-    // Calculate rotation based on scroll
-    const rotateX = scrollY * 0.1
-    const rotateY = scrollY * 0.2
-    const scale = 1 + (scrollY * 0.001)
-
     return (
         <div className="min-h-screen">
             {/* Hero Section with 3D Background */}
             <section className="relative py-20 px-4 overflow-hidden min-h-[700px] flex items-center">
-                {/* 3D Jewelry Background */}
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                    <div
-                        className="relative w-[800px] h-[800px]"
-                        style={{
-                            transform: `perspective(1200px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale(${scale})`,
-                            transition: 'transform 0.1s ease-out'
-                        }}
-                    >
-                        {/* Ring 1 - Top Left */}
-                        <motion.img
-                            src="https://images.unsplash.com/photo-1605100804763-247f67b3557e?q=80&w=800&auto=format&fit=crop"
-                            alt="Ring"
-                            className="absolute top-10 left-10 w-80 h-80 object-contain opacity-60 drop-shadow-2xl"
-                            style={{
-                                transform: `translateZ(100px) rotateZ(${scrollY * 0.3}deg)`,
-                                filter: 'brightness(1.2) contrast(1.1)'
-                            }}
-                        />
-
-                        {/* Necklace - Top Right */}
-                        <motion.img
-                            src="https://images.unsplash.com/photo-1599643478518-17488fbbcd75?q=80&w=800&auto=format&fit=crop"
-                            alt="Necklace"
-                            className="absolute top-20 right-10 w-96 h-96 object-contain opacity-50 drop-shadow-2xl"
-                            style={{
-                                transform: `translateZ(-50px) rotateZ(${-scrollY * 0.2}deg)`,
-                                filter: 'brightness(1.1)'
-                            }}
-                        />
-
-                        {/* Diamond Ring - Bottom Left */}
-                        <motion.img
-                            src="https://images.unsplash.com/photo-1603561591411-07134e71a2a9?q=80&w=800&auto=format&fit=crop"
-                            alt="Diamond Ring"
-                            className="absolute bottom-20 left-20 w-72 h-72 object-contain opacity-70 drop-shadow-2xl"
-                            style={{
-                                transform: `translateZ(150px) rotateZ(${scrollY * 0.15}deg)`,
-                                filter: 'brightness(1.3) contrast(1.2)'
-                            }}
-                        />
-
-                        {/* Bracelet - Bottom Right */}
-                        <motion.img
-                            src="https://images.unsplash.com/photo-1611591437281-460bfbe1220a?q=80&w=800&auto=format&fit=crop"
-                            alt="Bracelet"
-                            className="absolute bottom-10 right-20 w-64 h-64 object-contain opacity-55 drop-shadow-2xl"
-                            style={{
-                                transform: `translateZ(-80px) rotateZ(${-scrollY * 0.25}deg)`,
-                                filter: 'brightness(1.15)'
-                            }}
-                        />
-                    </div>
+                {/* 3D Jewelry Scene */}
+                <div className="absolute inset-0 pointer-events-none opacity-40">
+                    <Suspense fallback={<div className="w-full h-full bg-gradient-to-b from-background/50 to-background" />}>
+                        <JewelryScene scrollY={scrollY} />
+                    </Suspense>
                 </div>
 
-                {/* Gradient Overlay - More subtle */}
-                <div className="absolute inset-0 bg-gradient-to-b from-background/80 via-background/60 to-background" />
+                {/* Gradient Overlay */}
+                <div className="absolute inset-0 bg-gradient-to-b from-background/70 via-background/50 to-background pointer-events-none" />
 
                 <div className="container mx-auto max-w-6xl relative z-10">
                     <motion.div
