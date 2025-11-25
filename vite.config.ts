@@ -12,5 +12,11 @@ export default defineConfig({
     },
     optimizeDeps: {
         include: ['three', '@react-three/fiber', '@react-three/drei'],
+        force: true,
+    },
+    build: {
+        commonjsOptions: {
+            include: [/node_modules/],
+        },
     },
 })

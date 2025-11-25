@@ -17,6 +17,7 @@ export default function VirtualTryOn() {
     const [landmarks, setLandmarks] = useState<any[]>([])
     const [isModelLoaded, setIsModelLoaded] = useState(false)
     const [cameraPermission, setCameraPermission] = useState<boolean | null>(null)
+    const [videoDimensions, setVideoDimensions] = useState({ width: 1280, height: 720 })
     const requestRef = useRef<number>()
     const handLandmarkerRef = useRef<HandLandmarker | null>(null)
 
@@ -32,7 +33,10 @@ export default function VirtualTryOn() {
                         delegate: "GPU"
                     },
                     runningMode: "VIDEO",
-                    numHands: 1
+                    numHands: 1,
+                    minHandDetectionConfidence: 0.7, // Higher confidence for better accuracy
+                    minHandPresenceConfidence: 0.7,
+                    minTrackingConfidence: 0.7
                 })
                 setIsModelLoaded(true)
                 toast.success('AR Model loaded successfully')
@@ -59,6 +63,12 @@ export default function VirtualTryOn() {
             webcamRef.current.video.readyState === 4
         ) {
             const video = webcamRef.current.video
+
+            // Update video dimensions
+            if (video.videoWidth && video.videoHeight) {
+                setVideoDimensions({ width: video.videoWidth, height: video.videoHeight })
+            }
+
             const startTimeMs = performance.now()
             const result = handLandmarkerRef.current.detectForVideo(video, startTimeMs)
 
@@ -134,7 +144,12 @@ export default function VirtualTryOn() {
                 />
 
                 {/* AR Overlay */}
-                <ARCanvas landmarks={landmarks} />
+                <ARCanvas
+                    landmarks={landmarks}
+                    videoWidth={videoDimensions.width}
+                    videoHeight={videoDimensions.height}
+                    productImage={product?.image}
+                />
 
                 {/* Instructions Overlay */}
                 <div className="absolute bottom-10 left-0 w-full text-center z-10 pointer-events-none">
