@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Trash2, Plus, Package, Truck, CheckCircle, Clock } from 'lucide-react'
+import { Trash2, Plus, Package } from 'lucide-react'
 import {
     Select,
     SelectContent,
