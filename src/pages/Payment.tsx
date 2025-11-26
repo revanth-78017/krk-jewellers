@@ -48,7 +48,7 @@ export default function Payment() {
             }
 
             // Save Order
-            addOrder(cart, total)
+            await addOrder(cart, total)
 
             toast.success('Payment successful! Order placed.')
             clearCart()

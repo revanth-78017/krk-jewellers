@@ -14,8 +14,11 @@ import { useNavigate } from 'react-router-dom'
 import { PaymentMethodModal } from '@/components/PaymentMethodModal'
 import { WalletPinModal } from '@/components/WalletPinModal'
 import { SuccessAnimation } from '@/components/SuccessAnimation'
+import { db } from '@/lib/firebase'
+import { collection, doc, onSnapshot, setDoc, deleteDoc } from 'firebase/firestore'
 
 interface Investment {
+    id?: string
     metal: 'gold' | 'silver'
     amount: number
     weight: number
@@ -44,42 +47,37 @@ export default function MarketTrends() {
     const [showPinModal, setShowPinModal] = useState(false)
     const [showSuccessAnimation, setShowSuccessAnimation] = useState(false)
     const [pendingInvestment, setPendingInvestment] = useState<{ metal: 'gold' | 'silver', amount: number } | null>(null)
-    const [pendingSaleIndex, setPendingSaleIndex] = useState<number | null>(null)
+    const [pendingSaleId, setPendingSaleId] = useState<string | null>(null)
 
     // Investment state
     const [goldInvestment, setGoldInvestment] = useState<number>(0)
     const [silverInvestment, setSilverInvestment] = useState<number>(0)
     const [investments, setInvestments] = useState<Investment[]>([])
 
-    // Load investments when user changes
+    // Load investments from Firestore
     useEffect(() => {
         if (user) {
-            const saved = localStorage.getItem(`investments_${user.id}`)
-            if (saved) {
-                try {
-                    const parsed = JSON.parse(saved).map((inv: any) => ({
-                        ...inv,
-                        investedDate: new Date(inv.investedDate)
-                    }))
-                    setInvestments(parsed)
-                } catch (e) {
-                    console.error("Failed to parse investments", e)
-                    setInvestments([])
-                }
-            } else {
-                setInvestments([])
-            }
+            const investmentsRef = collection(db, 'users', user.id, 'investments')
+            const unsubscribe = onSnapshot(investmentsRef, (snapshot) => {
+                const fetchedInvestments: Investment[] = []
+                snapshot.forEach((doc) => {
+                    const data = doc.data()
+                    fetchedInvestments.push({
+                        id: doc.id,
+                        metal: data.metal,
+                        amount: data.amount,
+                        weight: data.weight,
+                        investedPrice: data.investedPrice,
+                        investedDate: data.investedDate.toDate() // Convert Firestore Timestamp to Date
+                    })
+                })
+                setInvestments(fetchedInvestments)
+            })
+            return () => unsubscribe()
         } else {
             setInvestments([])
         }
     }, [user])
-
-    // Save investments when they change
-    useEffect(() => {
-        if (user) {
-            localStorage.setItem(`investments_${user.id}`, JSON.stringify(investments))
-        }
-    }, [investments, user])
 
     useEffect(() => {
         setHistoricalData(MarketService.getHistoricalData())
@@ -190,12 +188,12 @@ export default function MarketTrends() {
     const handlePinSuccess = () => {
         if (pendingInvestment) {
             handleWalletPaymentSuccess()
-        } else if (pendingSaleIndex !== null) {
+        } else if (pendingSaleId) {
             completeSale()
         }
     }
 
-    const handleWalletPaymentSuccess = () => {
+    const handleWalletPaymentSuccess = async () => {
         if (!pendingInvestment) return
 
         const { metal, amount } = pendingInvestment
@@ -204,12 +202,14 @@ export default function MarketTrends() {
             ? amount / currentPrice
             : amount / currentPrice
 
-        if (deductFromWallet(amount, `Investment in ${metal}`)) {
+        if (await deductFromWallet(amount, `Investment in ${metal}`)) {
             completeInvestment(metal, amount, weight, currentPrice)
         }
     }
 
-    const completeInvestment = (metal: 'gold' | 'silver', amount: number, weight: number, price: number) => {
+    const completeInvestment = async (metal: 'gold' | 'silver', amount: number, weight: number, price: number) => {
+        if (!user) return
+
         const newInvestment: Investment = {
             metal,
             amount,
@@ -218,33 +218,41 @@ export default function MarketTrends() {
             investedDate: new Date()
         }
 
-        setInvestments(prev => [...prev, newInvestment])
+        try {
+            const docRef = doc(collection(db, 'users', user.id, 'investments'))
+            await setDoc(docRef, newInvestment)
 
-        // Reset input
-        if (metal === 'gold') {
-            setGoldInvestment(0)
-        } else {
-            setSilverInvestment(0)
+            // Reset input
+            if (metal === 'gold') {
+                setGoldInvestment(0)
+            } else {
+                setSilverInvestment(0)
+            }
+
+            setShowSuccessAnimation(true)
+            setPendingInvestment(null)
+        } catch (error) {
+            console.error("Error saving investment:", error)
+            toast.error("Failed to save investment")
         }
-
-        setShowSuccessAnimation(true)
-        setPendingInvestment(null)
     }
 
-    const handleSellClick = (index: number) => {
-        setPendingSaleIndex(index)
+    const handleSellClick = (id: string) => {
+        setPendingSaleId(id)
         setShowPinModal(true)
     }
 
-    const completeSale = () => {
-        if (pendingSaleIndex === null) return
-        const index = pendingSaleIndex
-        const investment = investments[index]
+    const completeSale = async () => {
+        if (!pendingSaleId || !user) return
+
+        const investment = investments.find(inv => inv.id === pendingSaleId)
+        if (!investment) return
+
         const currentPrice = getCurrentPrice(investment.metal)
         const currentValue = investment.weight * currentPrice
         const profit = currentValue - investment.amount
 
-        addToWallet(currentValue, `Selling ${investment.weight.toFixed(3)}${investment.metal === 'gold' ? 'g' : 'kg'} ${investment.metal}`)
+        await addToWallet(currentValue, `Selling ${investment.weight.toFixed(3)}${investment.metal === 'gold' ? 'g' : 'kg'} ${investment.metal}`)
 
         // Generate Invoice Data
         const invoiceData = {
@@ -261,17 +269,22 @@ export default function MarketTrends() {
             profit: profit.toLocaleString()
         }
 
-        const newInvestments = investments.filter((_, i) => i !== index)
-        setInvestments(newInvestments)
+        try {
+            await deleteDoc(doc(db, 'users', user.id, 'investments', pendingSaleId))
 
-        toast.success(`Successfully sold ${investment.metal} investment!`, {
-            description: `Credited ₹${currentValue.toLocaleString()} to wallet.`,
-            action: {
-                label: 'Download Invoice',
-                onClick: () => InvoiceService.generateSellInvoice(invoiceData)
-            }
-        })
-        setPendingSaleIndex(null)
+            toast.success(`Successfully sold ${investment.metal} investment!`, {
+                description: `Credited ₹${currentValue.toLocaleString()} to wallet.`,
+                action: {
+                    label: 'Download Invoice',
+                    onClick: () => InvoiceService.generateSellInvoice(invoiceData)
+                }
+            })
+        } catch (error) {
+            console.error("Error selling investment:", error)
+            toast.error("Failed to process sale")
+        }
+
+        setPendingSaleId(null)
     }
 
     const calculateProfit = (investment: Investment): { currentValue: number; profit: number; profitPercent: number } => {
@@ -487,7 +500,7 @@ export default function MarketTrends() {
                                 {investments.map((inv, idx) => {
                                     const { currentValue, profit, profitPercent } = calculateProfit(inv)
                                     return (
-                                        <div key={idx} className="bg-muted/30 p-4 rounded-lg">
+                                        <div key={inv.id || idx} className="bg-muted/30 p-4 rounded-lg">
                                             <div className="flex justify-between items-start mb-2">
                                                 <div>
                                                     <p className="font-semibold capitalize">{inv.metal} Investment</p>
@@ -524,7 +537,7 @@ export default function MarketTrends() {
                                                 <Button
                                                     variant="destructive"
                                                     size="sm"
-                                                    onClick={() => handleSellClick(idx)}
+                                                    onClick={() => inv.id && handleSellClick(inv.id)}
                                                     className="bg-red-500/10 text-red-500 hover:bg-red-500/20 border border-red-500/20"
                                                 >
                                                     Sell & Withdraw
@@ -645,7 +658,7 @@ export default function MarketTrends() {
                 isOpen={showPinModal}
                 onClose={() => {
                     setShowPinModal(false)
-                    setPendingSaleIndex(null)
+                    setPendingSaleId(null)
                     setPendingInvestment(null)
                 }}
                 onSuccess={handlePinSuccess}
