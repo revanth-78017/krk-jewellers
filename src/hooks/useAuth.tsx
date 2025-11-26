@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
-import { useUser, useClerk, useSession } from '@clerk/clerk-react'
+import { auth } from '@/lib/firebase'
+import { onAuthStateChanged, signOut as firebaseSignOut, User as FirebaseUser } from 'firebase/auth'
 
 export interface User {
     id: string
@@ -12,7 +13,6 @@ export interface User {
 
 interface AuthContextType {
     user: User | null
-    session: any
     signOut: () => Promise<void>
     loading: boolean
 }
@@ -20,39 +20,38 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-    const { user: clerkUser, isLoaded: isUserLoaded } = useUser()
-    const { session } = useSession()
-    const { signOut } = useClerk()
     const [user, setUser] = useState<User | null>(null)
     const [loading, setLoading] = useState(true)
 
     useEffect(() => {
-        if (isUserLoaded) {
-            if (clerkUser) {
-                const email = clerkUser.primaryEmailAddress?.emailAddress || ''
+        const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+            if (firebaseUser) {
+                const email = firebaseUser.email || ''
                 const mappedUser: User = {
-                    id: clerkUser.id,
+                    id: firebaseUser.uid,
                     email: email,
-                    display_name: clerkUser.fullName || '',
-                    phone_number: clerkUser.primaryPhoneNumber?.phoneNumber,
-                    role: email === 'revanthkumar3747@gmail.com' ? 'admin' : (clerkUser.publicMetadata.role as 'admin' | 'user') || 'user',
-                    imageUrl: clerkUser.imageUrl
+                    display_name: firebaseUser.displayName || '',
+                    phone_number: firebaseUser.phoneNumber || undefined,
+                    role: email === 'revanthkumar3747@gmail.com' ? 'admin' : 'user', // Basic role check
+                    imageUrl: firebaseUser.photoURL || undefined
                 }
                 setUser(mappedUser)
             } else {
                 setUser(null)
             }
             setLoading(false)
-        }
-    }, [isUserLoaded, clerkUser])
+        })
+
+        return () => unsubscribe()
+    }, [])
 
     const handleSignOut = async () => {
-        await signOut()
+        await firebaseSignOut(auth)
         setUser(null)
     }
 
     return (
-        <AuthContext.Provider value={{ user, session, signOut: handleSignOut, loading }}>
+        <AuthContext.Provider value={{ user, signOut: handleSignOut, loading }}>
             {children}
         </AuthContext.Provider>
     )

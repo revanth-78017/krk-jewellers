@@ -1,4 +1,4 @@
-import { useUser } from '@clerk/clerk-react'
+import { useAuth } from '@/hooks/useAuth'
 import { Navigate, useLocation } from 'react-router-dom'
 import { ReactNode } from 'react'
 
@@ -7,11 +7,11 @@ interface ProtectedRouteProps {
 }
 
 export default function ProtectedRoute({ children }: ProtectedRouteProps) {
-    const { isSignedIn, isLoaded } = useUser()
+    const { user, loading } = useAuth()
     const location = useLocation()
 
     // Show loading state while checking auth
-    if (!isLoaded) {
+    if (loading) {
         return (
             <div className="min-h-screen flex items-center justify-center">
                 <div className="text-center">
@@ -23,7 +23,7 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
     }
 
     // Redirect to auth if not signed in
-    if (!isSignedIn) {
+    if (!user) {
         return <Navigate to="/auth" replace state={{ from: location }} />
     }
 

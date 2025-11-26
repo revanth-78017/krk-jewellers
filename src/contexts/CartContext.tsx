@@ -2,6 +2,8 @@ import { createContext, useContext, useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { Product, useProducts } from './ProductContext'
 import { useAuth } from '@/hooks/useAuth'
+import { db } from '@/lib/firebase'
+import { collection, doc, onSnapshot, setDoc, deleteDoc, writeBatch } from 'firebase/firestore'
 
 export interface CartItem extends Product {
     quantity: number
@@ -10,10 +12,10 @@ export interface CartItem extends Product {
 
 interface CartContextType {
     cart: CartItem[]
-    addToCart: (product: Product) => void
-    removeFromCart: (productId: string) => void
-    clearCart: () => void
-    applyPromoCode: (code: string) => void
+    addToCart: (product: Product) => Promise<void>
+    removeFromCart: (productId: string) => Promise<void>
+    clearCart: () => Promise<void>
+    applyPromoCode: (code: string) => Promise<void>
     total: number
     subtotal: number
     discountTotal: number
@@ -25,107 +27,104 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     const { products } = useProducts()
     const { user } = useAuth()
     const [cart, setCart] = useState<CartItem[]>([])
-    const [isInitialized, setIsInitialized] = useState(false)
 
-    // Hydrate cart from localStorage when products are available and user is logged in
+    // Sync cart from Firestore
     useEffect(() => {
-        if (products.length > 0 && !isInitialized && user) {
-            const storedCartStr = localStorage.getItem(`krk_cart_${user.id}`)
-            if (storedCartStr) {
-                try {
-                    const storedItems = JSON.parse(storedCartStr) as { id: string, quantity: number, appliedDiscount?: number }[]
-                    const hydratedCart = storedItems.map(item => {
-                        const product = products.find(p => p.id === item.id)
-                        if (product) {
-                            const cartItem: CartItem = {
-                                ...product,
-                                quantity: item.quantity,
-                                appliedDiscount: item.appliedDiscount
-                            }
-                            return cartItem
-                        }
-                        return null
-                    }).filter((item): item is CartItem => item !== null)
-
-                    setCart(hydratedCart)
-                } catch (e) {
-                    console.error("Failed to parse cart from storage", e)
-                }
-            } else {
-                setCart([])
-            }
-            setIsInitialized(true)
-        } else if (products.length > 0 && isInitialized) {
-            // If products change (e.g. edited in admin), update cart items
-            setCart(prev => prev.map(item => {
-                const updatedProduct = products.find(p => p.id === item.id)
-                if (updatedProduct) {
-                    return { ...updatedProduct, quantity: item.quantity, appliedDiscount: item.appliedDiscount }
-                }
-                return item
-            }))
-        } else if (!user) {
+        if (user) {
+            const cartRef = collection(db, 'users', user.id, 'cart')
+            const unsubscribe = onSnapshot(cartRef, (snapshot) => {
+                const items: CartItem[] = []
+                snapshot.forEach((doc) => {
+                    const data = doc.data()
+                    // Find product details from products context to keep info fresh
+                    const product = products.find(p => p.id === doc.id)
+                    if (product) {
+                        items.push({
+                            ...product,
+                            quantity: data.quantity,
+                            appliedDiscount: data.appliedDiscount
+                        })
+                    }
+                })
+                setCart(items)
+            })
+            return () => unsubscribe()
+        } else {
             setCart([])
-            setIsInitialized(false)
         }
-    }, [products, isInitialized, user])
+    }, [user, products])
 
-    // Persist cart to localStorage (only IDs and metadata)
-    useEffect(() => {
-        if (isInitialized && user) {
-            const simplifiedCart = cart.map(item => ({
-                id: item.id,
-                quantity: item.quantity,
-                appliedDiscount: item.appliedDiscount
-            }))
-            try {
-                localStorage.setItem(`krk_cart_${user.id}`, JSON.stringify(simplifiedCart))
-            } catch (e) {
-                console.error("Failed to save cart to storage (Quota Exceeded?)", e)
-                toast.error("Cart storage full. Some items may not be saved.")
-            }
+    const addToCart = async (product: Product) => {
+        if (!user) {
+            toast.error("Please sign in to add items to cart")
+            return
         }
-    }, [cart, isInitialized, user])
 
-    const addToCart = (product: Product) => {
-        setCart(prev => {
-            const existing = prev.find(item => item.id === product.id)
-            if (existing) {
-                toast.success('Item quantity updated!')
-                return prev.map(item =>
-                    item.id === product.id
-                        ? { ...item, quantity: item.quantity + 1 }
-                        : item
-                )
-            }
-            toast.success('Added to cart!')
-            return [...prev, { ...product, quantity: 1 }]
-        })
+        const existingItem = cart.find(item => item.id === product.id)
+        const newQuantity = existingItem ? existingItem.quantity + 1 : 1
+
+        try {
+            await setDoc(doc(db, 'users', user.id, 'cart', product.id), {
+                quantity: newQuantity,
+                appliedDiscount: existingItem?.appliedDiscount || null
+            }, { merge: true })
+
+            toast.success(existingItem ? 'Item quantity updated!' : 'Added to cart!')
+        } catch (error) {
+            console.error("Error adding to cart:", error)
+            toast.error("Failed to add item")
+        }
     }
 
-    const removeFromCart = (productId: string) => {
-        setCart(prev => prev.filter(item => item.id !== productId))
-        toast.success('Removed from cart')
+    const removeFromCart = async (productId: string) => {
+        if (!user) return
+        try {
+            await deleteDoc(doc(db, 'users', user.id, 'cart', productId))
+            toast.success('Removed from cart')
+        } catch (error) {
+            console.error("Error removing from cart:", error)
+            toast.error("Failed to remove item")
+        }
     }
 
-    const clearCart = () => {
-        setCart([])
-        toast.success('Cart cleared')
+    const clearCart = async () => {
+        if (!user) return
+        try {
+            const batch = writeBatch(db)
+            cart.forEach(item => {
+                const ref = doc(db, 'users', user.id, 'cart', item.id)
+                batch.delete(ref)
+            })
+            await batch.commit()
+            toast.success('Cart cleared')
+        } catch (error) {
+            console.error("Error clearing cart:", error)
+            toast.error("Failed to clear cart")
+        }
     }
 
-    const applyPromoCode = (code: string) => {
+    const applyPromoCode = async (code: string) => {
+        if (!user) return
+
         let applied = false
-        const updatedCart = cart.map(item => {
+        const batch = writeBatch(db)
+
+        cart.forEach(item => {
             if (item.promoCode === code && item.discount) {
                 applied = true
-                return { ...item, appliedDiscount: item.discount }
+                const ref = doc(db, 'users', user.id, 'cart', item.id)
+                batch.update(ref, { appliedDiscount: item.discount })
             }
-            return item
         })
 
         if (applied) {
-            setCart(updatedCart)
-            toast.success('Promo code applied!')
+            try {
+                await batch.commit()
+                toast.success('Promo code applied!')
+            } catch (error) {
+                console.error("Error applying promo code:", error)
+                toast.error("Failed to apply promo code")
+            }
         } else {
             toast.error('Invalid promo code')
         }

@@ -43,7 +43,7 @@ export default function Cart() {
                 const PUBLIC_KEY = 'DcZjOXOD41nMuQuRI'
 
                 // Save order first to get ID
-                const newOrder = addOrder(cart, total)
+                const newOrder = await addOrder(cart, total)
                 if (!newOrder) {
                     console.error('Failed to create order')
                     return

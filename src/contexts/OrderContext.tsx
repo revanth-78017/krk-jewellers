@@ -1,5 +1,8 @@
 import React, { createContext, useContext, useState, useEffect } from 'react'
 import { useAuth } from '@/hooks/useAuth'
+import { db } from '@/lib/firebase'
+import { collection, doc, onSnapshot, setDoc, query, where, orderBy } from 'firebase/firestore'
+import { toast } from 'sonner'
 
 export interface OrderItem {
     id: string
@@ -24,8 +27,8 @@ export interface Order {
 
 interface OrderContextType {
     orders: Order[]
-    addOrder: (items: OrderItem[], total: number) => Order | null
-    updateStatus: (orderId: string, status: Order['status']) => void
+    addOrder: (items: OrderItem[], total: number) => Promise<Order | null>
+    updateStatus: (orderId: string, status: Order['status']) => Promise<void>
 }
 
 const OrderContext = createContext<OrderContextType | undefined>(undefined)
@@ -34,38 +37,53 @@ export function OrderProvider({ children }: { children: React.ReactNode }) {
     const { user } = useAuth()
     const [orders, setOrders] = useState<Order[]>([])
 
-    // Load orders from global local storage on mount and when user changes
+    // Sync orders from Firestore
     useEffect(() => {
-        const loadOrders = () => {
-            const savedOrdersStr = localStorage.getItem('krk_all_orders')
-            let allOrders: Order[] = []
-            if (savedOrdersStr) {
-                try {
-                    allOrders = JSON.parse(savedOrdersStr)
-                } catch (e) {
-                    console.error("Failed to parse orders", e)
-                }
-            }
-
-            if (user?.role === 'admin') {
-                // Admin sees ALL orders
-                setOrders(allOrders)
-            } else if (user) {
-                // Regular user sees only THEIR orders
-                setOrders(allOrders.filter(order => order.userId === user.id))
-            } else {
-                setOrders([])
-            }
+        if (!user) {
+            setOrders([])
+            return
         }
 
-        loadOrders()
+        let q;
+        const ordersRef = collection(db, 'orders')
 
-        // Listen for storage events to update in real-time (optional but good for multi-tab)
-        window.addEventListener('storage', loadOrders)
-        return () => window.removeEventListener('storage', loadOrders)
+        if (user.role === 'admin') {
+            // Admin sees ALL orders, ordered by timestamp desc
+            q = query(ordersRef, orderBy('orderTimestamp', 'desc'))
+        } else {
+            // Regular user sees only THEIR orders
+            q = query(ordersRef, where('userId', '==', user.id), orderBy('orderTimestamp', 'desc'))
+        }
+
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            const fetchedOrders: Order[] = []
+            snapshot.forEach((doc) => {
+                fetchedOrders.push(doc.data() as Order)
+            })
+            setOrders(fetchedOrders)
+        }, (error) => {
+            console.error("Error fetching orders:", error)
+            // Fallback for index errors (if composite index missing)
+            if (error.code === 'failed-precondition') {
+                console.warn("Missing index, falling back to client-side filtering")
+                // Simplified query without ordering if index fails
+                const simpleQ = user.role === 'admin'
+                    ? query(ordersRef)
+                    : query(ordersRef, where('userId', '==', user.id))
+
+                onSnapshot(simpleQ, (snap) => {
+                    const items: Order[] = []
+                    snap.forEach(d => items.push(d.data() as Order))
+                    // Sort client-side
+                    setOrders(items.sort((a, b) => b.orderTimestamp - a.orderTimestamp))
+                })
+            }
+        })
+
+        return () => unsubscribe()
     }, [user])
 
-    const addOrder = (items: OrderItem[], total: number): Order | null => {
+    const addOrder = async (items: OrderItem[], total: number): Promise<Order | null> => {
         if (!user) return null
 
         const orderTimestamp = Date.now()
@@ -88,52 +106,23 @@ export function OrderProvider({ children }: { children: React.ReactNode }) {
             userEmail: user.email
         }
 
-        // Get existing global orders
-        const savedOrdersStr = localStorage.getItem('krk_all_orders')
-        let allOrders: Order[] = []
-        if (savedOrdersStr) {
-            try {
-                allOrders = JSON.parse(savedOrdersStr)
-            } catch (e) { console.error(e) }
+        try {
+            await setDoc(doc(db, 'orders', orderId), newOrder)
+            return newOrder
+        } catch (error) {
+            console.error("Error creating order:", error)
+            toast.error("Failed to create order")
+            return null
         }
-
-        // Add new order to global list
-        const updatedAllOrders = [newOrder, ...allOrders]
-        localStorage.setItem('krk_all_orders', JSON.stringify(updatedAllOrders))
-
-        // Update local state
-        if (user.role === 'admin') {
-            setOrders(updatedAllOrders)
-        } else {
-            setOrders(prev => [newOrder, ...prev])
-        }
-
-        return newOrder
     }
 
-    const updateStatus = (orderId: string, status: Order['status']) => {
-        // Get existing global orders
-        const savedOrdersStr = localStorage.getItem('krk_all_orders')
-        let allOrders: Order[] = []
-        if (savedOrdersStr) {
-            try {
-                allOrders = JSON.parse(savedOrdersStr)
-            } catch (e) { console.error(e) }
-        }
-
-        // Update status in global list
-        const updatedAllOrders = allOrders.map(order =>
-            order.id === orderId ? { ...order, status } : order
-        )
-        localStorage.setItem('krk_all_orders', JSON.stringify(updatedAllOrders))
-
-        // Update local state
-        if (user?.role === 'admin') {
-            setOrders(updatedAllOrders)
-        } else {
-            setOrders(prev => prev.map(order =>
-                order.id === orderId ? { ...order, status } : order
-            ))
+    const updateStatus = async (orderId: string, status: Order['status']) => {
+        try {
+            await setDoc(doc(db, 'orders', orderId), { status }, { merge: true })
+            toast.success(`Order status updated to ${status}`)
+        } catch (error) {
+            console.error("Error updating status:", error)
+            toast.error("Failed to update status")
         }
     }
 

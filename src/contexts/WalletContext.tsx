@@ -1,14 +1,16 @@
 import React, { createContext, useContext, useState, useEffect } from 'react'
 import { toast } from 'sonner'
 import { useAuth } from '@/hooks/useAuth'
+import { db } from '@/lib/firebase'
+import { doc, onSnapshot, setDoc, getDoc } from 'firebase/firestore'
 
 interface WalletContextType {
     balance: number
     isPinSet: boolean
-    addToWallet: (amount: number, source: string) => void
-    deductFromWallet: (amount: number, reason: string) => boolean
+    addToWallet: (amount: number, source: string) => Promise<void>
+    deductFromWallet: (amount: number, reason: string) => Promise<boolean>
     verifyPin: (pin: string) => boolean
-    setWalletPin: (pin: string) => void
+    setWalletPin: (pin: string) => Promise<void>
 }
 
 const WalletContext = createContext<WalletContextType | undefined>(undefined)
@@ -18,39 +20,58 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
     const [balance, setBalance] = useState<number>(0)
     const [pin, setPin] = useState<string | null>(null)
 
-    // Load wallet data when user changes
+    // Load wallet data from Firestore
     useEffect(() => {
         if (user) {
-            const savedBalance = localStorage.getItem(`wallet_balance_${user.id}`)
-            const savedPin = localStorage.getItem(`wallet_pin_${user.id}`)
-
-            setBalance(savedBalance ? parseFloat(savedBalance) : 0)
-            setPin(savedPin)
+            const walletRef = doc(db, 'users', user.id, 'wallet', 'info')
+            const unsubscribe = onSnapshot(walletRef, (docSnap) => {
+                if (docSnap.exists()) {
+                    const data = docSnap.data()
+                    setBalance(data.balance || 0)
+                    setPin(data.pin || null)
+                } else {
+                    // Initialize wallet if it doesn't exist
+                    setDoc(walletRef, { balance: 0, pin: null }, { merge: true })
+                    setBalance(0)
+                    setPin(null)
+                }
+            })
+            return () => unsubscribe()
         } else {
             setBalance(0)
             setPin(null)
         }
     }, [user])
 
-    // Save balance whenever it changes
-    useEffect(() => {
-        if (user) {
-            localStorage.setItem(`wallet_balance_${user.id}`, balance.toString())
-        }
-    }, [balance, user])
-
-    const addToWallet = (amount: number, source: string) => {
+    const addToWallet = async (amount: number, source: string) => {
         if (!user) return
-        setBalance(prev => prev + amount)
-        toast.success(`₹${amount.toLocaleString()} added to wallet from ${source}`)
+        const newBalance = balance + amount
+        try {
+            await setDoc(doc(db, 'users', user.id, 'wallet', 'info'), {
+                balance: newBalance
+            }, { merge: true })
+            toast.success(`₹${amount.toLocaleString()} added to wallet from ${source}`)
+        } catch (error) {
+            console.error("Error adding to wallet:", error)
+            toast.error("Failed to update wallet balance")
+        }
     }
 
-    const deductFromWallet = (amount: number, reason: string): boolean => {
+    const deductFromWallet = async (amount: number, reason: string): Promise<boolean> => {
         if (!user) return false
         if (balance >= amount) {
-            setBalance(prev => prev - amount)
-            console.log(`Deducted ₹${amount} for: ${reason}`)
-            return true
+            const newBalance = balance - amount
+            try {
+                await setDoc(doc(db, 'users', user.id, 'wallet', 'info'), {
+                    balance: newBalance
+                }, { merge: true })
+                console.log(`Deducted ₹${amount} for: ${reason}`)
+                return true
+            } catch (error) {
+                console.error("Error deducting from wallet:", error)
+                toast.error("Failed to process transaction")
+                return false
+            }
         } else {
             toast.error("Insufficient wallet balance")
             return false
@@ -58,15 +79,21 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
     }
 
     const verifyPin = (inputPin: string): boolean => {
-        if (!pin) return true // Should not happen if isPinSet is checked
+        if (!pin) return true
         return inputPin === pin
     }
 
-    const setWalletPin = (newPin: string) => {
+    const setWalletPin = async (newPin: string) => {
         if (!user) return
-        setPin(newPin)
-        localStorage.setItem(`wallet_pin_${user.id}`, newPin)
-        toast.success("Wallet PIN set successfully")
+        try {
+            await setDoc(doc(db, 'users', user.id, 'wallet', 'info'), {
+                pin: newPin
+            }, { merge: true })
+            toast.success("Wallet PIN set successfully")
+        } catch (error) {
+            console.error("Error setting PIN:", error)
+            toast.error("Failed to set PIN")
+        }
     }
 
     return (
