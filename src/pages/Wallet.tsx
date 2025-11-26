@@ -24,7 +24,7 @@ export default function Wallet() {
         }
 
         initializePayment({
-            key: import.meta.env.VITE_RAZORPAY_KEY_ID || '',
+            key: import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_test_RkMznI33g63X9w',
             amount: value * 100,
             currency: 'INR',
             name: 'KRK Jewellers',

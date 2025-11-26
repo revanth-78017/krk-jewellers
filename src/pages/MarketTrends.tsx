@@ -166,7 +166,7 @@ export default function MarketTrends() {
             : amount / currentPrice
 
         initializePayment({
-            key: import.meta.env.VITE_RAZORPAY_KEY_ID || '',
+            key: import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_test_RkMznI33g63X9w',
             amount: amount * 100,
             currency: 'INR',
             name: 'KRK Jewellers',
