@@ -44,6 +44,12 @@ export const MarketService = {
         try {
             // Fetch fresh data
             const API_KEY = import.meta.env.VITE_GOLD_API_KEY || 'goldapi-placeholder-key';
+
+            // If no valid key is present, throw immediately to trigger fallback without network error
+            if (API_KEY === 'goldapi-placeholder-key') {
+                throw new Error('No API key configured');
+            }
+
             const headers = { 'x-access-token': API_KEY, 'Content-Type': 'application/json' };
 
             const goldResponse = await fetch('https://www.goldapi.io/api/XAU/INR', { headers });
