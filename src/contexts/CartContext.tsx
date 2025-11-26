@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { Product, useProducts } from './ProductContext'
+import { useAuth } from '@/hooks/useAuth'
 
 export interface CartItem extends Product {
     quantity: number
@@ -22,13 +23,14 @@ const CartContext = createContext<CartContextType | undefined>(undefined)
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
     const { products } = useProducts()
+    const { user } = useAuth()
     const [cart, setCart] = useState<CartItem[]>([])
     const [isInitialized, setIsInitialized] = useState(false)
 
-    // Hydrate cart from localStorage when products are available
+    // Hydrate cart from localStorage when products are available and user is logged in
     useEffect(() => {
-        if (products.length > 0 && !isInitialized) {
-            const storedCartStr = localStorage.getItem('krk_cart')
+        if (products.length > 0 && !isInitialized && user) {
+            const storedCartStr = localStorage.getItem(`krk_cart_${user.id}`)
             if (storedCartStr) {
                 try {
                     const storedItems = JSON.parse(storedCartStr) as { id: string, quantity: number, appliedDiscount?: number }[]
@@ -49,6 +51,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
                 } catch (e) {
                     console.error("Failed to parse cart from storage", e)
                 }
+            } else {
+                setCart([])
             }
             setIsInitialized(true)
         } else if (products.length > 0 && isInitialized) {
@@ -60,25 +64,28 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
                 }
                 return item
             }))
+        } else if (!user) {
+            setCart([])
+            setIsInitialized(false)
         }
-    }, [products, isInitialized])
+    }, [products, isInitialized, user])
 
     // Persist cart to localStorage (only IDs and metadata)
     useEffect(() => {
-        if (isInitialized) {
+        if (isInitialized && user) {
             const simplifiedCart = cart.map(item => ({
                 id: item.id,
                 quantity: item.quantity,
                 appliedDiscount: item.appliedDiscount
             }))
             try {
-                localStorage.setItem('krk_cart', JSON.stringify(simplifiedCart))
+                localStorage.setItem(`krk_cart_${user.id}`, JSON.stringify(simplifiedCart))
             } catch (e) {
                 console.error("Failed to save cart to storage (Quota Exceeded?)", e)
                 toast.error("Cart storage full. Some items may not be saved.")
             }
         }
-    }, [cart, isInitialized])
+    }, [cart, isInitialized, user])
 
     const addToCart = (product: Product) => {
         setCart(prev => {

@@ -49,25 +49,37 @@ export default function MarketTrends() {
     // Investment state
     const [goldInvestment, setGoldInvestment] = useState<number>(0)
     const [silverInvestment, setSilverInvestment] = useState<number>(0)
-    const [investments, setInvestments] = useState<Investment[]>(() => {
-        const saved = localStorage.getItem('investments')
-        if (saved) {
-            try {
-                return JSON.parse(saved).map((inv: any) => ({
-                    ...inv,
-                    investedDate: new Date(inv.investedDate)
-                }))
-            } catch (e) {
-                console.error("Failed to parse investments", e)
-                return []
-            }
-        }
-        return []
-    })
+    const [investments, setInvestments] = useState<Investment[]>([])
 
+    // Load investments when user changes
     useEffect(() => {
-        localStorage.setItem('investments', JSON.stringify(investments))
-    }, [investments])
+        if (user) {
+            const saved = localStorage.getItem(`investments_${user.id}`)
+            if (saved) {
+                try {
+                    const parsed = JSON.parse(saved).map((inv: any) => ({
+                        ...inv,
+                        investedDate: new Date(inv.investedDate)
+                    }))
+                    setInvestments(parsed)
+                } catch (e) {
+                    console.error("Failed to parse investments", e)
+                    setInvestments([])
+                }
+            } else {
+                setInvestments([])
+            }
+        } else {
+            setInvestments([])
+        }
+    }, [user])
+
+    // Save investments when they change
+    useEffect(() => {
+        if (user) {
+            localStorage.setItem(`investments_${user.id}`, JSON.stringify(investments))
+        }
+    }, [investments, user])
 
     useEffect(() => {
         setHistoricalData(MarketService.getHistoricalData())
