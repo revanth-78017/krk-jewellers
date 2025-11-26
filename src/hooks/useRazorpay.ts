@@ -30,7 +30,22 @@ export const useRazorpay = () => {
                 throw new Error('Razorpay SDK not loaded')
             }
 
-            const rzp = new Razorpay(options)
+            // Wrap the success handler to stop loading
+            const originalHandler = options.handler
+            const optionsWithWrappedHandler = {
+                ...options,
+                handler: (response: any) => {
+                    setLoading(false)
+                    originalHandler(response)
+                },
+                modal: {
+                    ondismiss: () => {
+                        setLoading(false)
+                    }
+                }
+            }
+
+            const rzp = new Razorpay(optionsWithWrappedHandler)
             rzp.open()
 
             rzp.on('payment.failed', function (response: any) {

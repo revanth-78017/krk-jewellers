@@ -2,8 +2,9 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
 import { useAdmin } from '@/hooks/useAdmin'
 import { useCart } from '@/contexts/CartContext'
+import { useWallet } from '@/contexts/WalletContext'
 import { Button } from '@/components/ui/button'
-import { Moon, Sun, Menu, X, TrendingUp, TrendingDown } from 'lucide-react'
+import { Moon, Sun, Menu, X, TrendingUp, TrendingDown, Wallet } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { MarketService, MarketRate } from '@/services/MarketService'
@@ -13,6 +14,7 @@ export default function Navigation() {
     const navigate = useNavigate()
     const { isAdmin } = useAdmin()
     const { cart } = useCart()
+    const { balance } = useWallet()
     const [isDark, setIsDark] = useState(false)
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
     const [rates, setRates] = useState<MarketRate[]>([])
@@ -43,7 +45,7 @@ export default function Navigation() {
         { to: '/gallery', label: 'Gallery' },
         { to: '/customize', label: 'Customize' },
         { to: '/showcase', label: 'Showcase' },
-        { to: '/market-trends', label: 'Market Trends' },
+        { to: '/market-trends', label: 'Invest' },
     ]
 
     return (
@@ -138,6 +140,14 @@ export default function Navigation() {
                                 </Button>
                             )}
 
+                            {/* Wallet Balance */}
+                            {user && (
+                                <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-muted/50 rounded-full border border-gold/20">
+                                    <Wallet className="w-4 h-4 text-gold" />
+                                    <span className="text-sm font-semibold">₹{balance.toLocaleString()}</span>
+                                </div>
+                            )}
+
                             {/* Mobile Menu Button */}
                             <Button
                                 variant="ghost"
@@ -178,6 +188,12 @@ export default function Navigation() {
                                 >
                                     Cart ({cart.length})
                                 </Link>
+                                {user && (
+                                    <div className="flex items-center gap-2 py-2 px-1 text-foreground/80">
+                                        <Wallet className="w-4 h-4 text-gold" />
+                                        <span className="font-semibold">Balance: ₹{balance.toLocaleString()}</span>
+                                    </div>
+                                )}
                                 {user && (
                                     <Link
                                         to="/orders"

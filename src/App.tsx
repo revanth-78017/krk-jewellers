@@ -4,8 +4,10 @@ import { AuthProvider } from '@/hooks/useAuth'
 import { ProductProvider } from '@/contexts/ProductContext'
 import { OrderProvider } from '@/contexts/OrderContext'
 import { CartProvider } from '@/contexts/CartContext'
+import { WalletProvider } from '@/contexts/WalletContext'
 import { Toaster } from 'sonner'
 import Navigation from '@/components/Navigation'
+import ProtectedRoute from '@/components/ProtectedRoute'
 import Index from '@/pages/Index'
 import Gallery from '@/pages/Gallery'
 import Design from '@/pages/Design'
@@ -38,26 +40,32 @@ function App() {
                     <ProductProvider>
                         <CartProvider>
                             <OrderProvider>
-                                <div className="min-h-screen bg-background text-foreground">
-                                    <Navigation />
-                                    <Routes>
-                                        <Route path="/" element={<Index />} />
-                                        <Route path="/gallery" element={<Gallery />} />
-                                        <Route path="/design" element={<Design />} />
-                                        <Route path="/customize" element={<Customize />} />
-                                        <Route path="/auth" element={<Auth />} />
-                                        <Route path="/admin" element={<Admin />} />
-                                        <Route path="/showcase" element={<Showcase />} />
-                                        <Route path="/cart" element={<Cart />} />
-                                        <Route path="/orders" element={<MyOrders />} />
-                                        <Route path="/payment" element={<Payment />} />
-                                        <Route path="/market-trends" element={<MarketTrends />} />
-                                        <Route path="/product/:id" element={<ProductDetails />} />
-                                        <Route path="/try-on/:productId" element={<VirtualTryOn />} />
-                                        <Route path="*" element={<NotFound />} />
-                                    </Routes>
-                                </div>
-                                <Toaster position="top-right" richColors />
+                                <WalletProvider>
+                                    <div className="min-h-screen bg-background text-foreground">
+                                        <Navigation />
+                                        <Routes>
+                                            {/* Public routes - only home and auth */}
+                                            <Route path="/" element={<Index />} />
+                                            <Route path="/auth" element={<Auth />} />
+
+                                            {/* Protected routes - everything else requires sign in */}
+                                            <Route path="/gallery" element={<ProtectedRoute><Gallery /></ProtectedRoute>} />
+                                            <Route path="/showcase" element={<ProtectedRoute><Showcase /></ProtectedRoute>} />
+                                            <Route path="/market-trends" element={<ProtectedRoute><MarketTrends /></ProtectedRoute>} />
+                                            <Route path="/product/:id" element={<ProtectedRoute><ProductDetails /></ProtectedRoute>} />
+                                            <Route path="/design" element={<ProtectedRoute><Design /></ProtectedRoute>} />
+                                            <Route path="/customize" element={<ProtectedRoute><Customize /></ProtectedRoute>} />
+                                            <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
+                                            <Route path="/cart" element={<ProtectedRoute><Cart /></ProtectedRoute>} />
+                                            <Route path="/orders" element={<ProtectedRoute><MyOrders /></ProtectedRoute>} />
+                                            <Route path="/payment" element={<ProtectedRoute><Payment /></ProtectedRoute>} />
+                                            <Route path="/try-on/:productId" element={<ProtectedRoute><VirtualTryOn /></ProtectedRoute>} />
+
+                                            <Route path="*" element={<NotFound />} />
+                                        </Routes>
+                                    </div>
+                                    <Toaster position="top-right" richColors />
+                                </WalletProvider>
                             </OrderProvider>
                         </CartProvider>
                     </ProductProvider>

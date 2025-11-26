@@ -97,11 +97,11 @@
 
 @layer utilities {
   .text-gradient-gold {
-    @apply bg-clip-text text-transparent bg-gradient-to-r from-[#BF953F] via-[#FCF6BA] to-[#B38728];
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-[#D4AF37] via-[#F1C40F] to-[#AA8C2C];
   }
 
   .bg-gradient-gold {
-    @apply bg-gradient-to-r from-[#BF953F] via-[#FCF6BA] to-[#B38728];
+    @apply bg-gradient-to-r from-[#D4AF37] via-[#F1C40F] to-[#AA8C2C];
   }
 
   .shadow-elegant {
