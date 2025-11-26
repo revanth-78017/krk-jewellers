@@ -48,19 +48,19 @@ function App() {
                                             {/* Public routes - only home and auth */}
                                             <Route path="/" element={<Index />} />
                                             <Route path="/auth" element={<Auth />} />
+                                            <Route path="/gallery" element={<Gallery />} />
+                                            <Route path="/showcase" element={<Showcase />} />
+                                            <Route path="/invest" element={<MarketTrends />} />
+                                            <Route path="/product/:id" element={<ProductDetails />} />
+                                            <Route path="/design" element={<Design />} />
+                                            <Route path="/customize" element={<Customize />} />
+                                            <Route path="/try-on/:productId" element={<VirtualTryOn />} />
 
-                                            {/* Protected routes - everything else requires sign in */}
-                                            <Route path="/gallery" element={<ProtectedRoute><Gallery /></ProtectedRoute>} />
-                                            <Route path="/showcase" element={<ProtectedRoute><Showcase /></ProtectedRoute>} />
-                                            <Route path="/invest" element={<ProtectedRoute><MarketTrends /></ProtectedRoute>} />
-                                            <Route path="/product/:id" element={<ProtectedRoute><ProductDetails /></ProtectedRoute>} />
-                                            <Route path="/design" element={<ProtectedRoute><Design /></ProtectedRoute>} />
-                                            <Route path="/customize" element={<ProtectedRoute><Customize /></ProtectedRoute>} />
+                                            {/* Protected routes - user specific */}
                                             <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
                                             <Route path="/cart" element={<ProtectedRoute><Cart /></ProtectedRoute>} />
                                             <Route path="/orders" element={<ProtectedRoute><MyOrders /></ProtectedRoute>} />
                                             <Route path="/payment" element={<ProtectedRoute><Payment /></ProtectedRoute>} />
-                                            <Route path="/try-on/:productId" element={<ProtectedRoute><VirtualTryOn /></ProtectedRoute>} />
                                             <Route path="/wallet" element={<ProtectedRoute><Wallet /></ProtectedRoute>} />
 
                                             <Route path="*" element={<NotFound />} />
