@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input'
 import { useWallet } from '@/contexts/WalletContext'
 import { useRazorpay } from '@/hooks/useRazorpay'
 import { useAuth } from '@/hooks/useAuth'
-import { Wallet as WalletIcon, Plus, ShieldCheck, History, ArrowUpRight, ArrowDownLeft } from 'lucide-react'
+import { Wallet as WalletIcon, Plus, ShieldCheck, History, ArrowDownLeft } from 'lucide-react'
 import { WalletPinModal } from '@/components/WalletPinModal'
 import { toast } from 'sonner'
 

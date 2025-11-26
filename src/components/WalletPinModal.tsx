@@ -16,12 +16,12 @@ export function WalletPinModal({ isOpen, onClose, onSuccess, mode = 'verify' }: 
     const { isPinSet, verifyPin, setWalletPin } = useWallet()
     const [step, setStep] = useState<'enter' | 'set' | 'confirm' | 'verify_old'>('enter')
     const [pin, setPin] = useState('')
-    const [confirmPin, setConfirmPin] = useState('')
+
 
     useEffect(() => {
         if (isOpen) {
             setPin('')
-            setConfirmPin('')
+
 
             if (mode === 'change') {
                 setStep('verify_old')
