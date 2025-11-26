@@ -2,17 +2,35 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
 import { useAdmin } from '@/hooks/useAdmin'
 import { useProducts } from '@/contexts/ProductContext'
+import { useOrders, Order } from '@/contexts/OrderContext'
 import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Trash2, Plus } from 'lucide-react'
+import { Trash2, Plus, Package, Truck, CheckCircle, Clock } from 'lucide-react'
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select"
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from "@/components/ui/table"
+import { Badge } from "@/components/ui/badge"
 
 export default function Admin() {
     const { user } = useAuth()
     const { isAdmin, loading } = useAdmin()
     const { products, addProduct, deleteProduct } = useProducts()
+    const { orders, updateStatus } = useOrders()
     const navigate = useNavigate()
 
     const [newProduct, setNewProduct] = useState({
@@ -61,15 +79,25 @@ export default function Admin() {
         setImagePreview('')
     }
 
+    const getStatusColor = (status: string) => {
+        switch (status) {
+            case 'Paid': return 'bg-blue-500/10 text-blue-500 border-blue-500/20'
+            case 'Processing': return 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20'
+            case 'Shipped': return 'bg-purple-500/10 text-purple-500 border-purple-500/20'
+            case 'Delivered': return 'bg-green-500/10 text-green-500 border-green-500/20'
+            default: return 'bg-gray-500/10 text-gray-500 border-gray-500/20'
+        }
+    }
+
     if (loading) return <div className="min-h-screen flex items-center justify-center">Loading...</div>
     if (!isAdmin) return null
 
     return (
         <div className="min-h-screen py-12 px-4 bg-background">
-            <div className="container mx-auto max-w-6xl">
+            <div className="container mx-auto max-w-7xl">
                 <h1 className="text-4xl font-playfair font-bold mb-8 text-gradient-gold">Admin Dashboard</h1>
 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
                     {/* Add Product Form */}
                     <Card className="lg:col-span-1 h-fit shadow-elegant border-gold/20">
                         <CardHeader>
@@ -245,6 +273,84 @@ export default function Admin() {
                         </div>
                     </div>
                 </div>
+
+                {/* Order Management Section */}
+                <Card className="border-gold/20 shadow-elegant">
+                    <CardHeader>
+                        <CardTitle className="text-2xl font-playfair flex items-center gap-2">
+                            <Package className="w-6 h-6 text-gold" />
+                            Order Management
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Order ID</TableHead>
+                                    <TableHead>Date</TableHead>
+                                    <TableHead>Customer</TableHead>
+                                    <TableHead>Items</TableHead>
+                                    <TableHead>Total</TableHead>
+                                    <TableHead>Status</TableHead>
+                                    <TableHead>Action</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {orders.length === 0 ? (
+                                    <TableRow>
+                                        <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                                            No orders found.
+                                        </TableCell>
+                                    </TableRow>
+                                ) : (
+                                    orders.map((order) => (
+                                        <TableRow key={order.id}>
+                                            <TableCell className="font-mono">{order.invoiceNumber}</TableCell>
+                                            <TableCell>{order.date}</TableCell>
+                                            <TableCell>
+                                                <div className="flex flex-col">
+                                                    <span className="font-medium">{order.userEmail}</span>
+                                                    <span className="text-xs text-muted-foreground">ID: {order.userId.substring(0, 8)}...</span>
+                                                </div>
+                                            </TableCell>
+                                            <TableCell>
+                                                <div className="flex flex-col gap-1">
+                                                    {order.items.map((item, idx) => (
+                                                        <span key={idx} className="text-sm">
+                                                            {item.quantity}x {item.name}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            </TableCell>
+                                            <TableCell className="font-bold">₹{order.total.toLocaleString()}</TableCell>
+                                            <TableCell>
+                                                <Badge variant="outline" className={getStatusColor(order.status)}>
+                                                    {order.status}
+                                                </Badge>
+                                            </TableCell>
+                                            <TableCell>
+                                                <Select
+                                                    defaultValue={order.status}
+                                                    onValueChange={(value) => updateStatus(order.id, value as Order['status'])}
+                                                >
+                                                    <SelectTrigger className="w-[140px]">
+                                                        <SelectValue placeholder="Update Status" />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="Paid">Paid</SelectItem>
+                                                        <SelectItem value="Processing">Processing</SelectItem>
+                                                        <SelectItem value="Shipped">Shipped</SelectItem>
+                                                        <SelectItem value="Delivered">Delivered</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))
+                                )}
+                            </TableBody>
+                        </Table>
+                    </CardContent>
+                </Card>
             </div>
         </div>
     )

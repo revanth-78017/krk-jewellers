@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { MarketService, HistoricalData, MarketRate } from '@/services/MarketService'
+import { InvoiceService } from '@/services/InvoiceService'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, AreaChart, Area } from 'recharts'
 import { TrendingUp, Info, Wallet, TrendingDown, Activity } from 'lucide-react'
 import { useRazorpay } from '@/hooks/useRazorpay'
@@ -78,7 +79,7 @@ export default function MarketTrends() {
         // Update live rates every second
         const interval = setInterval(() => {
             MarketService.getLiveRates().then(setLiveRates)
-        }, 5000)
+        }, 1000)
 
         return () => clearInterval(interval)
     }, [])
@@ -233,11 +234,30 @@ export default function MarketTrends() {
 
         addToWallet(currentValue, `Selling ${investment.weight.toFixed(3)}${investment.metal === 'gold' ? 'g' : 'kg'} ${investment.metal}`)
 
+        // Generate Invoice Data
+        const invoiceData = {
+            transactionId: `TXN-${Date.now()}`,
+            date: new Date().toLocaleString(),
+            customerName: user?.display_name || 'Valued Customer',
+            items: [{
+                description: `${investment.metal === 'gold' ? '24K Gold' : '999 Silver'} Investment`,
+                weight: `${investment.weight.toFixed(3)}${investment.metal === 'gold' ? 'g' : 'kg'}`,
+                rate: `Rs. ${currentPrice.toLocaleString()}/${investment.metal === 'gold' ? 'g' : 'kg'}`,
+                amount: `Rs. ${currentValue.toLocaleString()}`
+            }],
+            totalAmount: currentValue.toLocaleString(),
+            profit: profit.toLocaleString()
+        }
+
         const newInvestments = investments.filter((_, i) => i !== index)
         setInvestments(newInvestments)
 
         toast.success(`Successfully sold ${investment.metal} investment!`, {
-            description: `Credited ₹${currentValue.toLocaleString()} to wallet (Profit: ₹${profit.toLocaleString()})`
+            description: `Credited ₹${currentValue.toLocaleString()} to wallet.`,
+            action: {
+                label: 'Download Invoice',
+                onClick: () => InvoiceService.generateSellInvoice(invoiceData)
+            }
         })
         setPendingSaleIndex(null)
     }

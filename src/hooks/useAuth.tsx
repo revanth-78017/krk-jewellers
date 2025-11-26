@@ -7,6 +7,7 @@ export interface User {
     display_name?: string
     phone_number?: string
     role?: 'admin' | 'user'
+    imageUrl?: string
 }
 
 interface AuthContextType {
@@ -34,7 +35,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                     email: email,
                     display_name: clerkUser.fullName || '',
                     phone_number: clerkUser.primaryPhoneNumber?.phoneNumber,
-                    role: email === 'revanthkumar3747@gmail.com' ? 'admin' : (clerkUser.publicMetadata.role as 'admin' | 'user') || 'user'
+                    role: email === 'revanthkumar3747@gmail.com' ? 'admin' : (clerkUser.publicMetadata.role as 'admin' | 'user') || 'user',
+                    imageUrl: clerkUser.imageUrl
                 }
                 setUser(mappedUser)
             } else {

@@ -1,6 +1,7 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
-import { Wallet, CreditCard } from "lucide-react"
+import { Wallet, CreditCard, Plus } from "lucide-react"
+import { useNavigate } from "react-router-dom"
 
 interface PaymentMethodModalProps {
     isOpen: boolean
@@ -11,6 +12,7 @@ interface PaymentMethodModalProps {
 }
 
 export function PaymentMethodModal({ isOpen, onClose, onSelectMethod, amount, walletBalance }: PaymentMethodModalProps) {
+    const navigate = useNavigate()
     const canAfford = walletBalance >= amount
 
     return (
@@ -39,28 +41,46 @@ export function PaymentMethodModal({ isOpen, onClose, onSelectMethod, amount, wa
                         </div>
                     </Button>
 
-                    <Button
-                        variant="outline"
-                        disabled={!canAfford}
-                        className={`h-auto p-4 flex items-center justify-between border-gold/20 transition-all group ${canAfford ? 'hover:bg-gold/5 hover:border-gold/40' : 'opacity-50 cursor-not-allowed'
-                            }`}
-                        onClick={() => {
-                            if (canAfford) onSelectMethod('wallet')
-                        }}
-                    >
-                        <div className="flex items-center gap-4">
-                            <div className="p-2 rounded-full bg-gold/10 text-gold group-hover:bg-gold/20">
-                                <Wallet className="w-6 h-6" />
+                    <div className="relative">
+                        <Button
+                            variant="outline"
+                            disabled={!canAfford}
+                            className={`w-full h-auto p-4 flex items-center justify-between border-gold/20 transition-all group ${canAfford ? 'hover:bg-gold/5 hover:border-gold/40' : 'opacity-70'
+                                }`}
+                            onClick={() => {
+                                if (canAfford) onSelectMethod('wallet')
+                            }}
+                        >
+                            <div className="flex items-center gap-4">
+                                <div className="p-2 rounded-full bg-gold/10 text-gold group-hover:bg-gold/20">
+                                    <Wallet className="w-6 h-6" />
+                                </div>
+                                <div className="text-left">
+                                    <h3 className="font-semibold">Wallet Balance</h3>
+                                    <p className="text-sm text-muted-foreground">Available: ₹{walletBalance.toLocaleString()}</p>
+                                </div>
                             </div>
-                            <div className="text-left">
-                                <h3 className="font-semibold">Wallet Balance</h3>
-                                <p className="text-sm text-muted-foreground">Available: ₹{walletBalance.toLocaleString()}</p>
-                            </div>
-                        </div>
+                        </Button>
+
                         {!canAfford && (
-                            <span className="text-xs text-red-500 font-medium">Insufficient Balance</span>
+                            <div className="absolute -bottom-8 left-0 right-0 flex items-center justify-center">
+                                <Button
+                                    variant="link"
+                                    size="sm"
+                                    className="text-red-500 hover:text-red-600 flex items-center gap-1"
+                                    onClick={(e) => {
+                                        e.preventDefault()
+                                        onClose()
+                                        navigate('/wallet')
+                                    }}
+                                >
+                                    <Plus className="w-3 h-3" /> Insufficient Balance. Add Funds?
+                                </Button>
+                            </div>
                         )}
-                    </Button>
+                    </div>
+                    {/* Spacer for the absolute positioned button */}
+                    {!canAfford && <div className="h-6" />}
                 </div>
             </DialogContent>
         </Dialog>

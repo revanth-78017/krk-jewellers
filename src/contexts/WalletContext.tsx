@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react'
 import { toast } from 'sonner'
+import { useAuth } from '@/hooks/useAuth'
 
 interface WalletContextType {
     balance: number
@@ -13,29 +14,42 @@ interface WalletContextType {
 const WalletContext = createContext<WalletContextType | undefined>(undefined)
 
 export function WalletProvider({ children }: { children: React.ReactNode }) {
-    const [balance, setBalance] = useState<number>(() => {
-        const saved = localStorage.getItem('wallet_balance')
-        return saved ? parseFloat(saved) : 0
-    })
+    const { user } = useAuth()
+    const [balance, setBalance] = useState<number>(0)
+    const [pin, setPin] = useState<string | null>(null)
 
-    const [pin, setPin] = useState<string | null>(() => {
-        return localStorage.getItem('wallet_pin')
-    })
-
+    // Load wallet data when user changes
     useEffect(() => {
-        localStorage.setItem('wallet_balance', balance.toString())
-    }, [balance])
+        if (user) {
+            const savedBalance = localStorage.getItem(`wallet_balance_${user.id}`)
+            const savedPin = localStorage.getItem(`wallet_pin_${user.id}`)
+
+            setBalance(savedBalance ? parseFloat(savedBalance) : 0)
+            setPin(savedPin)
+        } else {
+            setBalance(0)
+            setPin(null)
+        }
+    }, [user])
+
+    // Save balance whenever it changes
+    useEffect(() => {
+        if (user) {
+            localStorage.setItem(`wallet_balance_${user.id}`, balance.toString())
+        }
+    }, [balance, user])
 
     const addToWallet = (amount: number, source: string) => {
+        if (!user) return
         setBalance(prev => prev + amount)
         toast.success(`₹${amount.toLocaleString()} added to wallet from ${source}`)
     }
 
     const deductFromWallet = (amount: number, reason: string): boolean => {
+        if (!user) return false
         if (balance >= amount) {
             setBalance(prev => prev - amount)
             console.log(`Deducted ₹${amount} for: ${reason}`)
-            // toast.success(`₹${amount.toLocaleString()} deducted for ${reason}`) // Removed to allow custom success handling
             return true
         } else {
             toast.error("Insufficient wallet balance")
@@ -49,8 +63,9 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
     }
 
     const setWalletPin = (newPin: string) => {
+        if (!user) return
         setPin(newPin)
-        localStorage.setItem('wallet_pin', newPin)
+        localStorage.setItem(`wallet_pin_${user.id}`, newPin)
         toast.success("Wallet PIN set successfully")
     }
 

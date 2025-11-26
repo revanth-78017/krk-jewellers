@@ -18,16 +18,33 @@ export interface HistoricalData {
 const BASE_GOLD_24K = 12678; // per 1g
 const BASE_SILVER = 157950; // per 1kg
 
+// Cache state
+let cachedRates: MarketRate[] | null = null;
+let lastFetchTime = 0;
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
 export const MarketService = {
     getLiveRates: async (): Promise<MarketRate[]> => {
+        const now = Date.now();
+        const shouldUseCache = cachedRates && (now - lastFetchTime < CACHE_DURATION);
+
+        if (shouldUseCache && cachedRates) {
+            // Apply micro-fluctuations to cached data for "live" feel
+            return cachedRates.map(rate => {
+                const fluctuation = (Math.random() - 0.5) * (rate.metal === 'Gold' ? 2 : 10); // +/- 1 Rs for Gold, +/- 5 Rs for Silver
+                const newPrice = Math.round(rate.price + fluctuation);
+                return {
+                    ...rate,
+                    price: newPrice,
+                    trend: fluctuation >= 0 ? 'up' : 'down'
+                };
+            });
+        }
+
         try {
-            // Using a public free key or placeholder. In production, this should be in .env
+            // Fetch fresh data
             const API_KEY = import.meta.env.VITE_GOLD_API_KEY || 'goldapi-placeholder-key';
             const headers = { 'x-access-token': API_KEY, 'Content-Type': 'application/json' };
-
-            // Fetch Gold (XAU) in INR
-            // Note: GoldAPI.io free tier might be limited. 
-            // We'll try to fetch, if it fails (401/429), we fall back to simulation.
 
             const goldResponse = await fetch('https://www.goldapi.io/api/XAU/INR', { headers });
             const silverResponse = await fetch('https://www.goldapi.io/api/XAG/INR', { headers });
@@ -39,11 +56,10 @@ export const MarketService = {
             const goldData = await goldResponse.json();
             const silverData = await silverResponse.json();
 
-            // GoldAPI returns price per ounce usually. 1 Ounce = 31.1035 grams.
             const goldPricePerGram = goldData.price / 31.1035;
             const silverPricePerKg = (silverData.price / 31.1035) * 1000;
 
-            return [
+            const newRates: MarketRate[] = [
                 {
                     metal: 'Gold',
                     purity: '24K',
@@ -66,40 +82,45 @@ export const MarketService = {
                 }
             ];
 
+            cachedRates = newRates;
+            lastFetchTime = now;
+            return newRates;
+
         } catch (error) {
             console.warn("GoldAPI fetch failed, using fallback simulation:", error);
             // Fallback to simulation
-            return new Promise((resolve) => {
-                setTimeout(() => {
-                    const fluctuation = () => (Math.random() - 0.5) * 10;
-                    const gold24k = BASE_GOLD_24K + fluctuation() * 5;
-                    const gold22k = gold24k * 0.916;
-                    const silver = BASE_SILVER + fluctuation() * 8;
+            const fluctuation = () => (Math.random() - 0.5) * 10;
+            const gold24k = BASE_GOLD_24K + fluctuation() * 5;
+            const gold22k = gold24k * 0.916;
+            const silver = BASE_SILVER + fluctuation() * 8;
 
-                    resolve([
-                        {
-                            metal: 'Gold',
-                            purity: '24K',
-                            price: Math.round(gold24k),
-                            change: 0.45,
-                            trend: 'up'
-                        },
-                        {
-                            metal: 'Gold',
-                            purity: '22K',
-                            price: Math.round(gold22k),
-                            change: 0.42,
-                            trend: 'up'
-                        },
-                        {
-                            metal: 'Silver',
-                            price: Math.round(silver),
-                            change: -0.12,
-                            trend: 'down'
-                        }
-                    ]);
-                }, 100);
-            });
+            const simulatedRates: MarketRate[] = [
+                {
+                    metal: 'Gold',
+                    purity: '24K',
+                    price: Math.round(gold24k),
+                    change: 0.45,
+                    trend: 'up'
+                },
+                {
+                    metal: 'Gold',
+                    purity: '22K',
+                    price: Math.round(gold22k),
+                    change: 0.42,
+                    trend: 'up'
+                },
+                {
+                    metal: 'Silver',
+                    price: Math.round(silver),
+                    change: -0.12,
+                    trend: 'down'
+                }
+            ];
+
+            // Even in fallback, we update cache to avoid spamming the failed API call
+            cachedRates = simulatedRates;
+            lastFetchTime = now;
+            return simulatedRates;
         }
     },
 

@@ -18,6 +18,8 @@ export interface Order {
     total: number
     items: OrderItem[]
     status: 'Paid' | 'Processing' | 'Shipped' | 'Delivered'
+    userId: string
+    userEmail: string
 }
 
 interface OrderContextType {
@@ -32,18 +34,35 @@ export function OrderProvider({ children }: { children: React.ReactNode }) {
     const { user } = useAuth()
     const [orders, setOrders] = useState<Order[]>([])
 
-    // Load orders from local storage on mount
+    // Load orders from global local storage on mount and when user changes
     useEffect(() => {
-        if (user) {
-            const savedOrders = localStorage.getItem(`orders_${user.id}`)
-            if (savedOrders) {
-                setOrders(JSON.parse(savedOrders))
+        const loadOrders = () => {
+            const savedOrdersStr = localStorage.getItem('krk_all_orders')
+            let allOrders: Order[] = []
+            if (savedOrdersStr) {
+                try {
+                    allOrders = JSON.parse(savedOrdersStr)
+                } catch (e) {
+                    console.error("Failed to parse orders", e)
+                }
+            }
+
+            if (user?.role === 'admin') {
+                // Admin sees ALL orders
+                setOrders(allOrders)
+            } else if (user) {
+                // Regular user sees only THEIR orders
+                setOrders(allOrders.filter(order => order.userId === user.id))
             } else {
                 setOrders([])
             }
-        } else {
-            setOrders([])
         }
+
+        loadOrders()
+
+        // Listen for storage events to update in real-time (optional but good for multi-tab)
+        window.addEventListener('storage', loadOrders)
+        return () => window.removeEventListener('storage', loadOrders)
     }, [user])
 
     const addOrder = (items: OrderItem[], total: number): Order | null => {
@@ -64,23 +83,57 @@ export function OrderProvider({ children }: { children: React.ReactNode }) {
             estimatedDelivery: deliveryDate.toLocaleDateString(),
             total,
             items,
-            status: 'Paid'
+            status: 'Paid',
+            userId: user.id,
+            userEmail: user.email
         }
 
-        const updatedOrders = [newOrder, ...orders]
-        setOrders(updatedOrders)
-        localStorage.setItem(`orders_${user.id}`, JSON.stringify(updatedOrders))
+        // Get existing global orders
+        const savedOrdersStr = localStorage.getItem('krk_all_orders')
+        let allOrders: Order[] = []
+        if (savedOrdersStr) {
+            try {
+                allOrders = JSON.parse(savedOrdersStr)
+            } catch (e) { console.error(e) }
+        }
+
+        // Add new order to global list
+        const updatedAllOrders = [newOrder, ...allOrders]
+        localStorage.setItem('krk_all_orders', JSON.stringify(updatedAllOrders))
+
+        // Update local state
+        if (user.role === 'admin') {
+            setOrders(updatedAllOrders)
+        } else {
+            setOrders(prev => [newOrder, ...prev])
+        }
 
         return newOrder
     }
 
     const updateStatus = (orderId: string, status: Order['status']) => {
-        const updatedOrders = orders.map(order =>
+        // Get existing global orders
+        const savedOrdersStr = localStorage.getItem('krk_all_orders')
+        let allOrders: Order[] = []
+        if (savedOrdersStr) {
+            try {
+                allOrders = JSON.parse(savedOrdersStr)
+            } catch (e) { console.error(e) }
+        }
+
+        // Update status in global list
+        const updatedAllOrders = allOrders.map(order =>
             order.id === orderId ? { ...order, status } : order
         )
-        setOrders(updatedOrders)
-        if (user) {
-            localStorage.setItem(`orders_${user.id}`, JSON.stringify(updatedOrders))
+        localStorage.setItem('krk_all_orders', JSON.stringify(updatedAllOrders))
+
+        // Update local state
+        if (user?.role === 'admin') {
+            setOrders(updatedAllOrders)
+        } else {
+            setOrders(prev => prev.map(order =>
+                order.id === orderId ? { ...order, status } : order
+            ))
         }
     }
 

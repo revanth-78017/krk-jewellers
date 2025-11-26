@@ -22,6 +22,7 @@ import MarketTrends from '@/pages/MarketTrends'
 import ProductDetails from '@/pages/ProductDetails'
 import NotFound from '@/pages/NotFound'
 import VirtualTryOn from '@/pages/VirtualTryOn'
+import Wallet from '@/pages/Wallet'
 
 const queryClient = new QueryClient({
     defaultOptions: {
@@ -51,7 +52,7 @@ function App() {
                                             {/* Protected routes - everything else requires sign in */}
                                             <Route path="/gallery" element={<ProtectedRoute><Gallery /></ProtectedRoute>} />
                                             <Route path="/showcase" element={<ProtectedRoute><Showcase /></ProtectedRoute>} />
-                                            <Route path="/market-trends" element={<ProtectedRoute><MarketTrends /></ProtectedRoute>} />
+                                            <Route path="/invest" element={<ProtectedRoute><MarketTrends /></ProtectedRoute>} />
                                             <Route path="/product/:id" element={<ProtectedRoute><ProductDetails /></ProtectedRoute>} />
                                             <Route path="/design" element={<ProtectedRoute><Design /></ProtectedRoute>} />
                                             <Route path="/customize" element={<ProtectedRoute><Customize /></ProtectedRoute>} />
@@ -60,6 +61,7 @@ function App() {
                                             <Route path="/orders" element={<ProtectedRoute><MyOrders /></ProtectedRoute>} />
                                             <Route path="/payment" element={<ProtectedRoute><Payment /></ProtectedRoute>} />
                                             <Route path="/try-on/:productId" element={<ProtectedRoute><VirtualTryOn /></ProtectedRoute>} />
+                                            <Route path="/wallet" element={<ProtectedRoute><Wallet /></ProtectedRoute>} />
 
                                             <Route path="*" element={<NotFound />} />
                                         </Routes>

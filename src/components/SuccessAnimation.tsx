@@ -15,15 +15,17 @@ export function SuccessAnimation({ isOpen, onClose }: SuccessAnimationProps) {
             setShow(true)
             const timer = setTimeout(() => {
                 setShow(false)
-                onClose()
-            }, 3000)
+                setTimeout(onClose, 300) // Wait for fade out animation
+            }, 2000)
             return () => clearTimeout(timer)
+        } else {
+            setShow(false)
         }
-    }, [isOpen, onClose])
+    }, [isOpen])
 
     return (
         <Dialog open={isOpen} onOpenChange={() => { }}>
-            <DialogContent className="sm:max-w-md bg-transparent border-none shadow-none flex flex-col items-center justify-center min-h-[400px]">
+            <DialogContent className="sm:max-w-md bg-transparent border-none shadow-none flex flex-col items-center justify-center min-h-[400px] [&>button]:hidden">
                 <div className={`transform transition-all duration-1000 ${show ? 'scale-100 opacity-100' : 'scale-50 opacity-0'}`}>
                     <div className="w-32 h-32 rounded-full bg-green-500 flex items-center justify-center animate-bounce shadow-[0_0_50px_rgba(34,197,94,0.5)]">
                         <Check className="w-16 h-16 text-white stroke-[4]" />

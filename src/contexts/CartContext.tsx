@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState } from 'react'
 import { toast } from 'sonner'
-import { Product } from './ProductContext'
+import { Product, useProducts } from './ProductContext'
 
 export interface CartItem extends Product {
     quantity: number
@@ -21,17 +21,64 @@ interface CartContextType {
 const CartContext = createContext<CartContextType | undefined>(undefined)
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
-    const [cart, setCart] = useState<CartItem[]>(() => {
-        const storedCart = localStorage.getItem('krk_cart')
-        return storedCart ? JSON.parse(storedCart) : []
-    })
+    const { products } = useProducts()
+    const [cart, setCart] = useState<CartItem[]>([])
+    const [isInitialized, setIsInitialized] = useState(false)
 
-    // Removed redundant useEffect for loading cart
-
-
+    // Hydrate cart from localStorage when products are available
     useEffect(() => {
-        localStorage.setItem('krk_cart', JSON.stringify(cart))
-    }, [cart])
+        if (products.length > 0 && !isInitialized) {
+            const storedCartStr = localStorage.getItem('krk_cart')
+            if (storedCartStr) {
+                try {
+                    const storedItems = JSON.parse(storedCartStr) as { id: string, quantity: number, appliedDiscount?: number }[]
+                    const hydratedCart = storedItems.map(item => {
+                        const product = products.find(p => p.id === item.id)
+                        if (product) {
+                            const cartItem: CartItem = {
+                                ...product,
+                                quantity: item.quantity,
+                                appliedDiscount: item.appliedDiscount
+                            }
+                            return cartItem
+                        }
+                        return null
+                    }).filter((item): item is CartItem => item !== null)
+
+                    setCart(hydratedCart)
+                } catch (e) {
+                    console.error("Failed to parse cart from storage", e)
+                }
+            }
+            setIsInitialized(true)
+        } else if (products.length > 0 && isInitialized) {
+            // If products change (e.g. edited in admin), update cart items
+            setCart(prev => prev.map(item => {
+                const updatedProduct = products.find(p => p.id === item.id)
+                if (updatedProduct) {
+                    return { ...updatedProduct, quantity: item.quantity, appliedDiscount: item.appliedDiscount }
+                }
+                return item
+            }))
+        }
+    }, [products, isInitialized])
+
+    // Persist cart to localStorage (only IDs and metadata)
+    useEffect(() => {
+        if (isInitialized) {
+            const simplifiedCart = cart.map(item => ({
+                id: item.id,
+                quantity: item.quantity,
+                appliedDiscount: item.appliedDiscount
+            }))
+            try {
+                localStorage.setItem('krk_cart', JSON.stringify(simplifiedCart))
+            } catch (e) {
+                console.error("Failed to save cart to storage (Quota Exceeded?)", e)
+                toast.error("Cart storage full. Some items may not be saved.")
+            }
+        }
+    }, [cart, isInitialized])
 
     const addToCart = (product: Product) => {
         setCart(prev => {
