@@ -73,7 +73,7 @@ export default function Admin() {
         addProduct({
             ...newProduct,
             price: Number(newProduct.price),
-            discount: newProduct.discount ? Number(newProduct.discount) : undefined
+            discount: newProduct.discount ? Number(newProduct.discount) : 0
         })
         setNewProduct({ name: '', description: '', price: '', image: '', category: '', promoCode: '', discount: '' })
         setImagePreview('')
