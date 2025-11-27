@@ -1,9 +1,11 @@
 import { Link } from 'react-router-dom'
+import { useProducts } from '@/contexts/ProductContext'
 import { Button } from '@/components/ui/button'
 import { motion } from 'framer-motion'
 
 
 export default function Index() {
+    const { products } = useProducts()
     // Scroll effect removed for cleaner UI
 
 
@@ -75,9 +77,28 @@ export default function Index() {
                             <Link to="/gallery">View All</Link>
                         </Button>
                     </div>
-                    <p className="text-muted-foreground text-center py-8">
-                        Products will be displayed here once you set up your Supabase database
-                    </p>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                        {products.slice(0, 3).map((product) => (
+                            <motion.div
+                                key={product.id}
+                                whileHover={{ y: -10 }}
+                                className="group"
+                            >
+                                <Link to={`/product/${product.id}`}>
+                                    <div className="aspect-[4/5] overflow-hidden rounded-lg mb-4">
+                                        <img
+                                            src={product.image}
+                                            alt={product.name}
+                                            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                                        />
+                                    </div>
+                                    <h3 className="text-xl font-playfair font-semibold">{product.name}</h3>
+                                    <p className="text-primary font-bold mt-1">₹{product.price.toLocaleString()}</p>
+                                </Link>
+                            </motion.div>
+                        ))}
+                    </div>
                 </div>
             </section>
         </div>
