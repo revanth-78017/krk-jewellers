@@ -6,7 +6,7 @@ import { db } from '@/lib/firebase'
 import { collection, query, orderBy, getDocs, deleteDoc, doc, updateDoc } from 'firebase/firestore'
 import { SavedDesign } from '@/contexts/DesignContext'
 import { toast } from 'sonner'
-import { Loader2, Trash2, Download, Sparkles, Lock, CheckCircle2, Eye, X } from 'lucide-react'
+import { Loader2, Trash2, Download, Sparkles, Lock, CheckCircle2, Eye, X, Rotate3d } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useRazorpay } from '@/hooks/useRazorpay'
 import { Badge } from '@/components/ui/badge'
@@ -16,6 +16,8 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog"
+import { Viewer360 } from '@/components/design/Viewer360'
+import { DesignService } from '@/services/DesignService'
 
 const Watermark = () => (
     <div className="absolute inset-0 z-10 flex flex-col items-center justify-center pointer-events-none select-none overflow-hidden bg-black/10">
@@ -37,6 +39,7 @@ export default function MyDesigns() {
     const [deleting, setDeleting] = useState<string | null>(null)
     const [processingPaymentId, setProcessingPaymentId] = useState<string | null>(null)
     const [selectedDesign, setSelectedDesign] = useState<SavedDesign | null>(null)
+    const [generating360, setGenerating360] = useState<string | null>(null)
 
     useEffect(() => {
         if (user) {
@@ -164,6 +167,44 @@ export default function MyDesigns() {
         })
     }
 
+    const handleGenerate360 = async (design: SavedDesign) => {
+        if (!design.id || !design.seed) return
+
+        setGenerating360(design.id)
+        try {
+            toast.info("Generating 360° views... This may take a moment.")
+
+            const rotationImages = await DesignService.generate360Views({
+                type: design.jewelryType,
+                material: design.material,
+                gemstone: design.gemstone,
+                prompt: design.prompt
+            }, design.seed)
+
+            // Update in Firestore
+            await updateDoc(doc(db, 'users', user!.id, 'designs', design.id), {
+                rotationImages
+            })
+
+            // Update local state
+            const updatedDesign = { ...design, rotationImages }
+            setDesigns(prev => prev.map(d =>
+                d.id === design.id ? updatedDesign : d
+            ))
+
+            if (selectedDesign?.id === design.id) {
+                setSelectedDesign(updatedDesign)
+            }
+
+            toast.success("360° view generated successfully!")
+        } catch (error) {
+            console.error("Error generating 360 view:", error)
+            toast.error("Failed to generate 360° view")
+        } finally {
+            setGenerating360(null)
+        }
+    }
+
     if (loading) {
         return (
             <div className="min-h-screen flex items-center justify-center">
@@ -277,12 +318,45 @@ export default function MyDesigns() {
                         >
                             {selectedDesign && (
                                 <>
-                                    <img
-                                        src={selectedDesign.imageUrl}
-                                        alt={selectedDesign.prompt}
-                                        className="max-h-full max-w-full object-contain"
-                                        draggable="false"
-                                    />
+                                    {selectedDesign.rotationImages && selectedDesign.rotationImages.length > 0 ? (
+                                        <div className="w-full h-full flex items-center justify-center p-4">
+                                            <Viewer360 images={selectedDesign.rotationImages} autoPlay={true} />
+                                        </div>
+                                    ) : (
+                                        <div className="relative w-full h-full flex items-center justify-center">
+                                            <img
+                                                src={selectedDesign.imageUrl}
+                                                alt={selectedDesign.prompt}
+                                                className="max-h-full max-w-full object-contain"
+                                                draggable="false"
+                                            />
+
+                                            {/* 360 Generation Prompt Overlay */}
+                                            {selectedDesign.isPaid && (
+                                                <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20">
+                                                    <Button
+                                                        onClick={() => handleGenerate360(selectedDesign)}
+                                                        disabled={generating360 === selectedDesign.id}
+                                                        variant="secondary"
+                                                        className="bg-black/50 backdrop-blur-md text-white border border-gold/30 hover:bg-gold/20"
+                                                    >
+                                                        {generating360 === selectedDesign.id ? (
+                                                            <>
+                                                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                                                Generating 360 View...
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                <Rotate3d className="mr-2 h-4 w-4" />
+                                                                Generate 360° Preview
+                                                            </>
+                                                        )}
+                                                    </Button>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+
                                     {/* Watermark for unpaid designs */}
                                     {!selectedDesign.isPaid && <Watermark />}
                                 </>

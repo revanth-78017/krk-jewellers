@@ -26,5 +26,37 @@ export const DesignService = {
             img.onerror = () => reject(new Error('Failed to generate image'));
             img.src = url;
         });
+    },
+
+    generate360Views: async (params: DesignParams, seed: number): Promise<string[]> => {
+        const angles = [
+            'front view',
+            'side profile view',
+            'back view',
+            'angled perspective view'
+        ];
+
+        const generateAngle = async (angle: string) => {
+            const prompt = `luxury ${params.type} jewelry, made of ${params.material}, featuring ${params.gemstone}, ${params.prompt}, ${angle}, photorealistic, 8k, continuous white background, cinematic lighting, high quality, product photography, intricate details, sharp focus, isolated on white`;
+            const encodedPrompt = encodeURIComponent(prompt);
+            // Use same seed for consistency across angles
+            const url = `https://image.pollinations.ai/prompt/${encodedPrompt}?seed=${seed}&width=1024&height=1024&nologo=true&model=flux`;
+
+            // Pre-load
+            return new Promise<string>((resolve, reject) => {
+                const img = new Image();
+                img.onload = () => resolve(url);
+                img.onerror = () => reject(new Error(`Failed to generate ${angle}`));
+                img.src = url;
+            });
+        };
+
+        try {
+            // Generate all angles in parallel
+            return await Promise.all(angles.map(angle => generateAngle(angle)));
+        } catch (error) {
+            console.error('Error generating 360 views:', error);
+            throw error;
+        }
     }
 }

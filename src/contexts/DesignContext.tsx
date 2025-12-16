@@ -13,6 +13,7 @@ export interface SavedDesign {
     jewelryType: string
     material: string
     gemstone: string
+    rotationImages?: string[]
     isPaid?: boolean
     createdAt: any
 }
