@@ -5,9 +5,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { toast } from 'sonner'
-import { Loader2, Download, Sparkles } from 'lucide-react'
+import { Loader2, Download, Sparkles, Wand2, RefreshCcw } from 'lucide-react'
 
 import { DesignService } from '@/services/DesignService'
+import { Badge } from '@/components/ui/badge'
 
 export default function Design() {
     const [prompt, setPrompt] = useState('')
@@ -16,6 +17,108 @@ export default function Design() {
     const [gemstone, setGemstone] = useState('Diamond')
     const [loading, setLoading] = useState(false)
     const [generatedImage, setGeneratedImage] = useState<string | null>(null)
+    const [currentSeed, setCurrentSeed] = useState<number | null>(null)
+    const [refinePrompt, setRefinePrompt] = useState('')
+
+    const handleSuggestionClick = (suggestion: string) => {
+        setPrompt((prev) => {
+            const separator = prev.length > 0 ? ', ' : ''
+            return prev + separator + suggestion
+        })
+        toast.info(`Added "${suggestion}" to prompt`)
+    }
+
+    const handleRefinementTagClick = (tag: string) => {
+        setRefinePrompt((prev) => {
+            const separator = prev.length > 0 ? ', ' : ''
+            return prev + separator + tag
+        })
+        toast.info(`Added "${tag}" to refinement`)
+    }
+
+    const handleFixGrammar = () => {
+        if (!prompt.trim()) return
+
+        // 1. Normalize spacing and case
+        let corrected = prompt
+            .replace(/\s+/g, ' ')
+            .trim()
+            .toLowerCase()
+
+        // Common jewelry typos
+        const typos: Record<string, string> = {
+            'jewelery': 'jewelry', 'jewellry': 'jewelry', 'jewelry': 'jewelry', 'jwellery': 'jewelry',
+            'dimond': 'diamond', 'daimond': 'diamond', 'diamon': 'diamond',
+            'saphire': 'sapphire', 'safire': 'sapphire',
+            'emrald': 'emerald', 'emarald': 'emerald',
+            'gold': 'gold', 'golld': 'gold',
+            'silver': 'silver', 'sliver': 'silver',
+            'ring': 'ring', 'rng': 'ring',
+            'necklas': 'necklace', 'neclace': 'necklace', 'necklace': 'necklace',
+            'pendant': 'pendant', 'pandent': 'pendant',
+            'earings': 'earrings', 'earing': 'earrings',
+            'braclet': 'bracelet', 'barcelet': 'bracelet',
+            'platnum': 'platinum', 'platinium': 'platinum',
+            'rosegold': 'rose gold',
+            'whitegold': 'white gold',
+            'stone': 'stone', 'stons': 'stones',
+            'dissign': 'design', 'desing': 'design',
+            'pattren': 'pattern', 'patern': 'pattern',
+            'filigree': 'filigree', 'filigre': 'filigree',
+            'vinatge': 'vintage', 'vintge': 'vintage',
+            'modren': 'modern',
+            'elagent': 'elegant',
+        }
+
+        // Fix typos
+        Object.entries(typos).forEach(([key, value]) => {
+            const regex = new RegExp(`\\b${key}\\b`, 'gi')
+            corrected = corrected.replace(regex, value)
+        })
+
+        // Dictionary of professional jewelry terms
+        const replacements: Record<string, string> = {
+            'nice': 'exquisite',
+            'pretty': 'elegant',
+            'beautiful': 'stunning',
+            'big': 'statement',
+            'small': 'delicate',
+            'shiny': 'high polish',
+            'good': 'premium quality',
+            'red': 'ruby red',
+            'blue': 'sapphire blue',
+            'green': 'emerald green',
+            'white': 'pristine white',
+            'black': 'obsidian black',
+            'sparkly': 'brilliant',
+            'fancy': 'ornate',
+            'simple': 'minimalist',
+            'round': 'brilliant cut',
+            'square': 'princess cut',
+            "it's": 'it is',
+            "don't": 'do not',
+            "can't": 'cannot',
+            "i'm": 'I am',
+            "i ": 'I '
+        }
+
+        // Apply professional replacements
+        Object.entries(replacements).forEach(([key, value]) => {
+            const regex = new RegExp(`\\b${key}\\b`, 'gi')
+            corrected = corrected.replace(regex, value)
+        })
+
+        // Simple sentence case (capitalize first char, and chars after . ! ?)
+        corrected = corrected.replace(/(^\w|[.!?]\s*\w)/g, letter => letter.toUpperCase())
+
+        // Ensure ends with punctuation
+        if (!/[.!?]$/.test(corrected)) {
+            corrected += '.'
+        }
+
+        setPrompt(corrected)
+        toast.success('Prompt revised and formatted')
+    }
 
     const handleGenerate = async () => {
         if (!prompt) {
@@ -25,13 +128,15 @@ export default function Design() {
 
         setLoading(true)
         try {
-            const imageUrl = await DesignService.generateDesign({
+            const result = await DesignService.generateDesign({
                 type: jewelryType,
                 material,
                 gemstone,
                 prompt
             })
-            setGeneratedImage(imageUrl)
+            setGeneratedImage(result.url)
+            setCurrentSeed(result.seed)
+            setRefinePrompt(prompt) // Initialize refinement prompt with original
             toast.success('Design generated successfully!')
         } catch (error: any) {
             console.error('Generation error:', error)
@@ -41,11 +146,71 @@ export default function Design() {
         }
     }
 
-    const handleDownload = () => {
-        if (generatedImage) {
+    const handleUpdateDesign = async () => {
+        if (!refinePrompt || currentSeed === null) return
+
+        setLoading(true)
+        try {
+            // Use existing seed to refine the image
+            const result = await DesignService.generateDesign({
+                type: jewelryType,
+                material,
+                gemstone,
+                prompt: refinePrompt
+            }, currentSeed)
+
+            setGeneratedImage(result.url)
+            // Seed remains the same for further refinements
+            toast.success('Design updated!')
+        } catch (error: any) {
+            console.error('Update error:', error)
+            toast.error('Failed to update design.')
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    const handleDownload = async () => {
+        if (!generatedImage) return
+
+        try {
+            // Fetch the image to get a blob (avoids CORS issues with canvas if headers allow)
+            const response = await fetch(generatedImage)
+            const blob = await response.blob()
+            const imageBitmap = await createImageBitmap(blob)
+
+            const canvas = document.createElement('canvas')
+            canvas.width = imageBitmap.width
+            canvas.height = imageBitmap.height
+            const ctx = canvas.getContext('2d')
+
+            if (!ctx) {
+                throw new Error('Could not get canvas context')
+            }
+
+            // Fill white background (JPG doesn't support transparency)
+            ctx.fillStyle = '#FFFFFF'
+            ctx.fillRect(0, 0, canvas.width, canvas.height)
+            ctx.drawImage(imageBitmap, 0, 0)
+
+            // Convert to JPG
+            const jpgUrl = canvas.toDataURL('image/jpeg', 0.95)
+
+            const link = document.createElement('a')
+            link.href = jpgUrl
+            link.download = `krk-design-${Date.now()}.jpg`
+            document.body.appendChild(link)
+            link.click()
+            document.body.removeChild(link)
+            toast.success('Image downloaded as JPG')
+        } catch (error) {
+            console.error('Download failed:', error)
+            toast.error('Failed to download image. Try right-click > Save Image As.')
+
+            // Fallback: direct link download
             const link = document.createElement('a')
             link.href = generatedImage
-            link.download = `krk-design-${Date.now()}.png`
+            link.download = `krk-design-${Date.now()}.jpg`
             document.body.appendChild(link)
             link.click()
             document.body.removeChild(link)
@@ -118,13 +283,40 @@ export default function Design() {
                             </div>
 
                             <div className="space-y-2">
-                                <Label>Design Description</Label>
+                                <div className="flex justify-between items-center">
+                                    <Label>Design Description</Label>
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={handleFixGrammar}
+                                        className="h-6 text-xs text-muted-foreground hover:text-primary px-2"
+                                        title="Fix grammar and formatting"
+                                    >
+                                        <Wand2 className="w-3 h-3 mr-1" />
+                                        Fix Grammar
+                                    </Button>
+                                </div>
                                 <Textarea
                                     placeholder="Describe the details... e.g., 'A vintage floral pattern with intricate filigree work'"
                                     value={prompt}
                                     onChange={(e) => setPrompt(e.target.value)}
                                     className="min-h-[150px] resize-none"
                                 />
+                                <div className="mt-4">
+                                    <Label className="text-sm font-medium mb-3 block">Quick Suggestions:</Label>
+                                    <div className="flex flex-wrap gap-2.5">
+                                        {SUGGESTION_TAGS.map((tag) => (
+                                            <Badge
+                                                key={tag}
+                                                variant="secondary"
+                                                className="cursor-pointer hover:bg-primary/20 transition-all px-3 py-1"
+                                                onClick={() => handleSuggestionClick(tag)}
+                                            >
+                                                + {tag}
+                                            </Badge>
+                                        ))}
+                                    </div>
+                                </div>
                             </div>
 
                             <Button
@@ -151,16 +343,55 @@ export default function Design() {
                     <Card className="min-h-[400px] flex items-center justify-center bg-muted/50 border-dashed">
                         <CardContent className="p-6 w-full h-full flex flex-col items-center justify-center">
                             {generatedImage ? (
-                                <div className="relative w-full h-full group">
-                                    <img
-                                        src={generatedImage}
-                                        alt="Generated Design"
-                                        className="w-full h-auto rounded-lg shadow-lg"
-                                    />
-                                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-lg">
-                                        <Button onClick={handleDownload} variant="secondary" size="lg">
-                                            <Download className="mr-2 h-5 w-5" />
-                                            Download Design
+                                <div className="w-full space-y-6">
+                                    <div className="relative w-full aspect-square group">
+                                        <img
+                                            src={generatedImage}
+                                            alt="Generated Design"
+                                            className="w-full h-full object-cover rounded-xl shadow-lg"
+                                        />
+                                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-xl">
+                                            <Button onClick={handleDownload} variant="secondary" size="lg">
+                                                <Download className="mr-2 h-5 w-5" />
+                                                Download Design
+                                            </Button>
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-4 pt-4 border-t">
+                                        <div className="space-y-2">
+                                            <Label className="text-lg font-medium">Refine Result</Label>
+                                            <p className="text-sm text-muted-foreground">Make adjustments to this specific design:</p>
+                                        </div>
+
+                                        <Textarea
+                                            value={refinePrompt}
+                                            onChange={(e) => setRefinePrompt(e.target.value)}
+                                            className="min-h-[100px]"
+                                            placeholder="Refine your prompt here..."
+                                        />
+
+                                        <div className="flex flex-wrap gap-2">
+                                            {REFINEMENT_TAGS.map((tag) => (
+                                                <Badge
+                                                    key={tag}
+                                                    variant="outline"
+                                                    className="cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors px-3 py-1 text-sm"
+                                                    onClick={() => handleRefinementTagClick(tag)}
+                                                >
+                                                    {tag}
+                                                </Badge>
+                                            ))}
+                                        </div>
+
+                                        <Button
+                                            onClick={handleUpdateDesign}
+                                            disabled={loading}
+                                            className="w-full"
+                                            variant="secondary"
+                                        >
+                                            {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCcw className="mr-2 h-4 w-4" />}
+                                            Update Design
                                         </Button>
                                     </div>
                                 </div>
@@ -180,3 +411,25 @@ export default function Design() {
         </div>
     )
 }
+
+const SUGGESTION_TAGS = [
+    "Vintage Style",
+    "Modern Minimalist",
+    "Art Deco",
+    "Nature Inspired",
+    "Geometric Patterns",
+    "Floral Motifs",
+    "Celestial Theme",
+    "Royal & Ornate"
+]
+
+const REFINEMENT_TAGS = [
+    "Add more side stones",
+    "Make it simpler",
+    "Add intricate filigree",
+    "Change to oval cut",
+    "Make it chunkier",
+    "Add pave setting",
+    "Make it more delicate",
+    "Add engraving details"
+]
