@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
+
 import { AddressForm } from './AddressForm'
-import { useAddress, SavedAddress } from '@/hooks/useAddress'
+import { useAddress } from '@/hooks/useAddress'
 import { Address } from '@/contexts/OrderContext'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Label } from '@/components/ui/label'
@@ -14,7 +14,7 @@ interface AddressManagerProps {
 }
 
 export function AddressManager({ onAddressSelect, onCancel }: AddressManagerProps) {
-    const { addresses, loading, addAddress } = useAddress()
+    const { addresses, loading } = useAddress()
     const [view, setView] = useState<'list' | 'new'>('list')
     const [selectedAddressId, setSelectedAddressId] = useState<string>('')
 

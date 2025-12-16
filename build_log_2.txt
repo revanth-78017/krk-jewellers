@@ -1,0 +1,9 @@
+
+> krk-jewellers@0.0.0 build
+> tsc && vite build
+
+src/components/checkout/AddressManager.tsx(3,1): error TS6192: All imports in import declaration are unused.
+src/components/checkout/AddressManager.tsx(5,22): error TS6133: 'SavedAddress' is declared but its value is never read.
+src/components/checkout/AddressManager.tsx(17,33): error TS6133: 'addAddress' is declared but its value is never read.
+src/components/design/Viewer360.tsx(3,1): error TS6133: 'Slider' is declared but its value is never read.
+src/components/design/Viewer360.tsx(3,24): error TS2307: Cannot find module '@/components/ui/slider' or its corresponding type declarations.
