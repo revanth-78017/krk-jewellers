@@ -123,7 +123,7 @@ export default function Payment() {
                                 <div className="bg-white p-4 inline-block rounded-lg border border-border">
                                     {/* QR Code with updated UPI ID */}
                                     <img
-                                        src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(`upi://pay?pa=9603299936@ybl&pn=KRK Jewellers&am=${total}&cu=INR`)}`}
+                                        src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(`upi://pay?pa=9603299936@ybl&pn=GOLD CRAFT&am=${total}&cu=INR`)}`}
                                         alt="UPI QR Code"
                                         className="w-48 h-48"
                                     />

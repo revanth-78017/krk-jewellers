@@ -30,7 +30,7 @@ export const generateInvoice = (data: InvoiceData) => {
     doc.setTextColor(0, 0, 0)
     doc.setFontSize(28)
     doc.setFont('helvetica', 'bold')
-    doc.text('KRK JEWELLERS', 105, 20, { align: 'center' })
+    doc.text('GOLD CRAFT', 105, 20, { align: 'center' })
 
     doc.setFontSize(10)
     doc.setFont('helvetica', 'normal')
@@ -127,8 +127,8 @@ export const generateInvoice = (data: InvoiceData) => {
     doc.setFont('helvetica', 'italic')
     doc.setFontSize(8)
     doc.text('Thank you for your purchase!', 105, 280, { align: 'center' })
-    doc.text('For any queries, contact us at support@krkjewellers.com', 105, 285, { align: 'center' })
+    doc.text('For any queries, contact us at support@goldcraft.com', 105, 285, { align: 'center' })
 
     // Download
-    doc.save(`KRK_Invoice_${data.invoiceNumber}.pdf`)
+    doc.save(`GOLD_CRAFT_Invoice_${data.invoiceNumber}.pdf`)
 }

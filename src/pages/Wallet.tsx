@@ -27,7 +27,7 @@ export default function Wallet() {
             key: import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_test_RkMznI33g63X9w',
             amount: value * 100,
             currency: 'INR',
-            name: 'KRK Jewellers',
+            name: 'GOLD CRAFT',
             description: 'Wallet Top-up',
             image: '/favicon.ico',
             prefill: {

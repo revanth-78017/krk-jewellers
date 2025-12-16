@@ -167,7 +167,7 @@ export default function MarketTrends() {
             key: import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_test_RkMznI33g63X9w',
             amount: amount * 100,
             currency: 'INR',
-            name: 'KRK Jewellers',
+            name: 'GOLD CRAFT',
             description: `Investment in ${metal === 'gold' ? '24K Gold' : '999 Silver'}`,
             image: '/favicon.ico',
             prefill: {

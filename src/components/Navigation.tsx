@@ -81,8 +81,8 @@ export default function Navigation() {
                     <div className="flex items-center justify-between h-16">
                         {/* Logo */}
                         <Link to="/" className="flex items-center gap-2">
-                            <span className="text-2xl font-bold text-gradient-gold">KRK</span>
-                            <span className="text-xl font-semibold hidden sm:inline">Jewellers</span>
+                            <span className="text-2xl font-bold text-gradient-gold">GOLD</span>
+                            <span className="text-xl font-semibold hidden sm:inline">CRAFT</span>
                         </Link>
 
                         {/* Desktop Navigation */}

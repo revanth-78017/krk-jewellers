@@ -24,7 +24,7 @@ export const InvoiceService = {
         // Header
         doc.setFontSize(22)
         doc.setTextColor(212, 175, 55) // Gold color
-        doc.text("KRK JEWELLERS", 105, 20, { align: "center" })
+        doc.text("GOLD CRAFT", 105, 20, { align: "center" })
 
         doc.setFontSize(10)
         doc.setTextColor(100)
@@ -77,9 +77,9 @@ export const InvoiceService = {
         doc.setFontSize(8)
         doc.setTextColor(150)
         doc.text("This is a computer generated invoice and does not require a signature.", 105, 280, { align: "center" })
-        doc.text("Thank you for investing with KRK Jewellers.", 105, 285, { align: "center" })
+        doc.text("Thank you for investing with GOLD CRAFT.", 105, 285, { align: "center" })
 
         // Save
-        doc.save(`KRK_Invoice_${details.transactionId}.pdf`)
+        doc.save(`GOLD_CRAFT_Invoice_${details.transactionId}.pdf`)
     }
 }

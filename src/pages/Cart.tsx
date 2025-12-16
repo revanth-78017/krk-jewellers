@@ -31,8 +31,8 @@ export default function Cart() {
             key: import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_test_RkMznI33g63X9w',
             amount: total * 100, // Amount in paise
             currency: 'INR',
-            name: 'KRK Jewellers',
-            description: 'Purchase from KRK Jewellers',
+            name: 'GOLD CRAFT',
+            description: 'Purchase from GOLD CRAFT',
             image: '/favicon.ico',
             handler: async (response) => {
                 console.log(response)
