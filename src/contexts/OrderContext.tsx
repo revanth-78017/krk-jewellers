@@ -12,6 +12,15 @@ export interface OrderItem {
     quantity: number
 }
 
+export interface Address {
+    fullName: string
+    street: string
+    city: string
+    state: string
+    zipCode: string
+    phone: string
+}
+
 export interface Order {
     id: string
     invoiceNumber: string
@@ -23,11 +32,12 @@ export interface Order {
     status: 'Paid' | 'Processing' | 'Shipped' | 'Delivered'
     userId: string
     userEmail: string
+    shippingAddress: Address
 }
 
 interface OrderContextType {
     orders: Order[]
-    addOrder: (items: OrderItem[], total: number) => Promise<Order | null>
+    addOrder: (items: OrderItem[], total: number, shippingAddress: Address) => Promise<Order | null>
     updateStatus: (orderId: string, status: Order['status']) => Promise<void>
 }
 
@@ -83,7 +93,7 @@ export function OrderProvider({ children }: { children: React.ReactNode }) {
         return () => unsubscribe()
     }, [user])
 
-    const addOrder = async (items: OrderItem[], total: number): Promise<Order | null> => {
+    const addOrder = async (items: OrderItem[], total: number, shippingAddress: Address): Promise<Order | null> => {
         if (!user) return null
 
         const orderTimestamp = Date.now()
@@ -103,7 +113,8 @@ export function OrderProvider({ children }: { children: React.ReactNode }) {
             items,
             status: 'Paid',
             userId: user.id,
-            userEmail: user.email
+            userEmail: user.email,
+            shippingAddress
         }
 
         try {

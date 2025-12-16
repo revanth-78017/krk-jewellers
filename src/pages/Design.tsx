@@ -9,8 +9,16 @@ import { Loader2, Download, Sparkles, Wand2, RefreshCcw } from 'lucide-react'
 
 import { DesignService } from '@/services/DesignService'
 import { Badge } from '@/components/ui/badge'
+import { useDesign } from '@/contexts/DesignContext'
+import { useRazorpay } from '@/hooks/useRazorpay'
+import { useAuth } from '@/hooks/useAuth'
+import { Save } from 'lucide-react'
 
 export default function Design() {
+    const { saveDesign, loading: saving } = useDesign()
+    const { initializePayment, loading: paying } = useRazorpay()
+    const { user } = useAuth()
+
     const [prompt, setPrompt] = useState('')
     const [jewelryType, setJewelryType] = useState('Ring')
     const [material, setMaterial] = useState('Gold')
@@ -170,7 +178,20 @@ export default function Design() {
         }
     }
 
-    const handleDownload = async () => {
+    const handleSave = async () => {
+        if (!generatedImage || !currentSeed) return
+
+        await saveDesign({
+            prompt,
+            imageUrl: generatedImage,
+            seed: currentSeed,
+            jewelryType,
+            material,
+            gemstone
+        })
+    }
+
+    const executeDownload = async () => {
         if (!generatedImage) return
 
         try {
@@ -215,6 +236,31 @@ export default function Design() {
             link.click()
             document.body.removeChild(link)
         }
+    }
+
+    const handlePaymentAndDownload = () => {
+        if (!generatedImage) return
+
+        initializePayment({
+            key: import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_test_RkMznI33g63X9w',
+            amount: 10000, // 100 INR
+            currency: 'INR',
+            name: 'GOLD CRAFT',
+            description: 'Design Download High Res',
+            image: '/favicon.ico',
+            handler: () => {
+                toast.success('Payment successful! Downloading design...')
+                executeDownload()
+            },
+            prefill: {
+                name: user?.display_name || "",
+                email: user?.email || "",
+                contact: user?.phone_number || ""
+            },
+            theme: {
+                color: '#D4AF37'
+            }
+        })
     }
 
     return (
@@ -350,10 +396,14 @@ export default function Design() {
                                             alt="Generated Design"
                                             className="w-full h-full object-cover rounded-xl shadow-lg"
                                         />
-                                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-xl">
-                                            <Button onClick={handleDownload} variant="secondary" size="lg">
-                                                <Download className="mr-2 h-5 w-5" />
-                                                Download Design
+                                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col gap-3 items-center justify-center rounded-xl p-4">
+                                            <Button onClick={handlePaymentAndDownload} variant="secondary" size="lg" className="w-full max-w-[200px]" disabled={paying}>
+                                                {paying ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Download className="mr-2 h-5 w-5" />}
+                                                Download (₹100)
+                                            </Button>
+                                            <Button onClick={handleSave} variant="outline" size="lg" className="w-full max-w-[200px] bg-white/90 text-black hover:bg-white" disabled={saving}>
+                                                {saving ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Save className="mr-2 h-5 w-5" />}
+                                                Save to Account
                                             </Button>
                                         </div>
                                     </div>

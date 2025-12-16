@@ -7,18 +7,20 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useState } from 'react'
 import { useRazorpay } from '@/hooks/useRazorpay'
 import { useAuth } from '@/hooks/useAuth'
-
-import { useOrders } from '@/contexts/OrderContext'
-
+import { useOrders, Address } from '@/contexts/OrderContext'
 import { toast } from 'sonner'
 import emailjs from 'emailjs-com'
+import { AddressManager } from '@/components/checkout/AddressManager'
+import { useAddress } from '@/hooks/useAddress'
 
 export default function Cart() {
     const { cart, removeFromCart, applyPromoCode, total, subtotal, discountTotal, clearCart } = useCart()
     const { user } = useAuth()
     const { addOrder } = useOrders()
     const { initializePayment, loading } = useRazorpay()
+    const { addAddress } = useAddress()
     const [promoInput, setPromoInput] = useState('')
+    const [showAddressForm, setShowAddressForm] = useState(false)
     const navigate = useNavigate()
 
     const handleCheckout = () => {
@@ -26,7 +28,22 @@ export default function Cart() {
             navigate('/auth')
             return
         }
+        setShowAddressForm(true)
+    }
 
+    const handleAddressSubmit = async (address: Address, saveAddress: boolean) => {
+        // Save address if requested
+        if (saveAddress) {
+            try {
+                await addAddress(address)
+                toast.success("Address saved for future use")
+            } catch (error) {
+                console.error("Failed to save address", error)
+                toast.error("Failed to save address, but proceeding with payment")
+            }
+        }
+
+        // Proceed to payment with the collected address
         initializePayment({
             key: import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_test_RkMznI33g63X9w',
             amount: total * 100, // Amount in paise
@@ -43,7 +60,7 @@ export default function Cart() {
                 const PUBLIC_KEY = 'DcZjOXOD41nMuQuRI'
 
                 // Save order first to get ID
-                const newOrder = await addOrder(cart, total)
+                const newOrder = await addOrder(cart, total, address)
                 if (!newOrder) {
                     console.error('Failed to create order')
                     return
@@ -109,9 +126,9 @@ export default function Cart() {
 
                 const orderDetails = {
                     // Standard fields
-                    to_name: user.display_name || "Customer",
-                    to_email: user.email,
-                    email: user.email,
+                    to_name: user?.display_name || "Customer",
+                    to_email: user?.email || "",
+                    email: user?.email || "",
 
                     // Template-specific fields
                     order_id: newOrder.invoiceNumber,
@@ -142,9 +159,9 @@ export default function Cart() {
                 navigate('/orders')
             },
             prefill: {
-                name: user.display_name,
-                email: user.email,
-                contact: user.phone_number
+                name: address.fullName || user?.display_name || "",
+                email: user?.email || "",
+                contact: address.phone || user?.phone_number || ""
             },
             theme: {
                 color: '#D4AF37'
@@ -167,6 +184,26 @@ export default function Cart() {
                 <Button asChild className="bg-gradient-gold text-black hover:opacity-90">
                     <Link to="/gallery">Browse Collection</Link>
                 </Button>
+            </div>
+        )
+    }
+
+    if (showAddressForm) {
+        return (
+            <div className="min-h-screen py-12 px-4 bg-background">
+                <div className="container mx-auto">
+                    <Button
+                        variant="ghost"
+                        onClick={() => setShowAddressForm(false)}
+                        className="mb-6 hover:bg-transparent hover:text-primary"
+                    >
+                        ← Back to Cart
+                    </Button>
+                    <AddressManager
+                        onAddressSelect={handleAddressSubmit}
+                        onCancel={() => setShowAddressForm(false)}
+                    />
+                </div>
             </div>
         )
     }

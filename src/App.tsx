@@ -5,6 +5,7 @@ import { ProductProvider } from '@/contexts/ProductContext'
 import { OrderProvider } from '@/contexts/OrderContext'
 import { CartProvider } from '@/contexts/CartContext'
 import { WalletProvider } from '@/contexts/WalletContext'
+import { DesignProvider } from '@/contexts/DesignContext'
 import { Toaster } from 'sonner'
 import Navigation from '@/components/Navigation'
 import ProtectedRoute from '@/components/ProtectedRoute'
@@ -23,6 +24,7 @@ import ProductDetails from '@/pages/ProductDetails'
 import NotFound from '@/pages/NotFound'
 import VirtualTryOn from '@/pages/VirtualTryOn'
 import Wallet from '@/pages/Wallet'
+import MyDesigns from '@/pages/MyDesigns'
 
 const queryClient = new QueryClient({
     defaultOptions: {
@@ -38,39 +40,42 @@ function App() {
         <QueryClientProvider client={queryClient}>
             <BrowserRouter>
                 <AuthProvider>
-                    <ProductProvider>
-                        <CartProvider>
-                            <OrderProvider>
-                                <WalletProvider>
-                                    <div className="min-h-screen bg-background text-foreground">
-                                        <Navigation />
-                                        <Routes>
-                                            {/* Public routes - only home and auth */}
-                                            <Route path="/" element={<Index />} />
-                                            <Route path="/auth" element={<Auth />} />
-                                            <Route path="/gallery" element={<Gallery />} />
-                                            <Route path="/showcase" element={<Showcase />} />
-                                            <Route path="/invest" element={<MarketTrends />} />
-                                            <Route path="/product/:id" element={<ProductDetails />} />
-                                            <Route path="/design" element={<Design />} />
-                                            <Route path="/customize" element={<Customize />} />
-                                            <Route path="/try-on/:productId" element={<VirtualTryOn />} />
+                    <DesignProvider>
+                        <ProductProvider>
+                            <CartProvider>
+                                <OrderProvider>
+                                    <WalletProvider>
+                                        <div className="min-h-screen bg-background text-foreground">
+                                            <Navigation />
+                                            <Routes>
+                                                {/* Public routes - only home and auth */}
+                                                <Route path="/" element={<Index />} />
+                                                <Route path="/auth" element={<Auth />} />
+                                                <Route path="/gallery" element={<Gallery />} />
+                                                <Route path="/showcase" element={<Showcase />} />
+                                                <Route path="/invest" element={<MarketTrends />} />
+                                                <Route path="/product/:id" element={<ProductDetails />} />
+                                                <Route path="/design" element={<Design />} />
+                                                <Route path="/customize" element={<Customize />} />
+                                                <Route path="/try-on/:productId" element={<VirtualTryOn />} />
 
-                                            {/* Protected routes - user specific */}
-                                            <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
-                                            <Route path="/cart" element={<ProtectedRoute><Cart /></ProtectedRoute>} />
-                                            <Route path="/orders" element={<ProtectedRoute><MyOrders /></ProtectedRoute>} />
-                                            <Route path="/payment" element={<ProtectedRoute><Payment /></ProtectedRoute>} />
-                                            <Route path="/wallet" element={<ProtectedRoute><Wallet /></ProtectedRoute>} />
+                                                {/* Protected routes - user specific */}
+                                                <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
+                                                <Route path="/cart" element={<ProtectedRoute><Cart /></ProtectedRoute>} />
+                                                <Route path="/orders" element={<ProtectedRoute><MyOrders /></ProtectedRoute>} />
+                                                <Route path="/my-designs" element={<ProtectedRoute><MyDesigns /></ProtectedRoute>} />
+                                                <Route path="/payment" element={<ProtectedRoute><Payment /></ProtectedRoute>} />
+                                                <Route path="/wallet" element={<ProtectedRoute><Wallet /></ProtectedRoute>} />
 
-                                            <Route path="*" element={<NotFound />} />
-                                        </Routes>
-                                    </div>
-                                    <Toaster position="top-right" richColors />
-                                </WalletProvider>
-                            </OrderProvider>
-                        </CartProvider>
-                    </ProductProvider>
+                                                <Route path="*" element={<NotFound />} />
+                                            </Routes>
+                                        </div>
+                                        <Toaster position="top-right" richColors />
+                                    </WalletProvider>
+                                </OrderProvider>
+                            </CartProvider>
+                        </ProductProvider>
+                    </DesignProvider>
                 </AuthProvider>
             </BrowserRouter>
         </QueryClientProvider>

@@ -4,7 +4,7 @@ import { useAdmin } from '@/hooks/useAdmin'
 import { useCart } from '@/contexts/CartContext'
 import { useWallet } from '@/contexts/WalletContext'
 import { Button } from '@/components/ui/button'
-import { Moon, Sun, Menu, X, TrendingUp, TrendingDown, Wallet, LogOut, Package } from 'lucide-react'
+import { Moon, Sun, Menu, X, TrendingUp, TrendingDown, Wallet, LogOut, Package, Sparkles } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { MarketService, MarketRate } from '@/services/MarketService'
@@ -162,6 +162,12 @@ export default function Navigation() {
                                                 <span>My Orders</span>
                                             </Link>
                                         </DropdownMenuItem>
+                                        <DropdownMenuItem asChild>
+                                            <Link to="/my-designs" className="cursor-pointer">
+                                                <Sparkles className="mr-2 h-4 w-4" />
+                                                <span>My Designs</span>
+                                            </Link>
+                                        </DropdownMenuItem>
                                         <DropdownMenuSeparator />
                                         <DropdownMenuItem onClick={handleSignOut} className="text-red-500 cursor-pointer">
                                             <LogOut className="mr-2 h-4 w-4" />
@@ -242,6 +248,13 @@ export default function Navigation() {
                                                 className="block py-2 px-1 text-foreground/80 hover:text-foreground transition-colors"
                                             >
                                                 My Orders
+                                            </Link>
+                                            <Link
+                                                to="/my-designs"
+                                                onClick={() => setMobileMenuOpen(false)}
+                                                className="block py-2 px-1 text-foreground/80 hover:text-foreground transition-colors"
+                                            >
+                                                My Designs
                                             </Link>
                                         </div>
                                     </>

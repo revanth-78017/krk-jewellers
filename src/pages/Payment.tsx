@@ -48,7 +48,16 @@ export default function Payment() {
             }
 
             // Save Order
-            await addOrder(cart, total)
+            // TODO: Collect actual address in this flow too if used.
+            const dummyAddress = {
+                fullName: "Walk-in/Direct",
+                street: "N/A",
+                city: "N/A",
+                state: "N/A",
+                zipCode: "N/A",
+                phone: "N/A"
+            }
+            await addOrder(cart, total, dummyAddress)
 
             toast.success('Payment successful! Order placed.')
             clearCart()
