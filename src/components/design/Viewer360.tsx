@@ -22,7 +22,7 @@ export function Viewer360({ images, initialIndex = 0, autoPlay = false }: Viewer
         if (isPlaying) {
             autoPlayRef.current = setInterval(() => {
                 setCurrentIndex((prev) => (prev + 1) % images.length)
-            }, 800) // Change image every 800ms
+            }, 400) // Change image every 400ms for smoother 8-frame rotation
         } else {
             clearInterval(autoPlayRef.current)
         }
@@ -45,7 +45,7 @@ export function Viewer360({ images, initialIndex = 0, autoPlay = false }: Viewer
         if (!isDragging) return
 
         const diff = e.clientX - startX.current
-        if (Math.abs(diff) > 50) { // Threshold for change
+        if (Math.abs(diff) > 30) { // Lower threshold for smoother control with more frames
             if (diff > 0) {
                 setCurrentIndex((prev) => (prev - 1 + images.length) % images.length)
             } else {
@@ -59,7 +59,7 @@ export function Viewer360({ images, initialIndex = 0, autoPlay = false }: Viewer
         if (!isDragging) return
 
         const diff = e.touches[0].clientX - startX.current
-        if (Math.abs(diff) > 50) {
+        if (Math.abs(diff) > 30) {
             if (diff > 0) {
                 setCurrentIndex((prev) => (prev - 1 + images.length) % images.length)
             } else {

@@ -31,9 +31,13 @@ export const DesignService = {
     generate360Views: async (params: DesignParams, seed: number): Promise<string[]> => {
         const angles = [
             'front view',
-            'side profile view',
+            'front-right side view',
+            'right profile view',
+            'back-right side view',
             'back view',
-            'angled perspective view'
+            'back-left side view',
+            'left profile view',
+            'front-left side view'
         ];
 
         const generateAngle = async (angle: string) => {
