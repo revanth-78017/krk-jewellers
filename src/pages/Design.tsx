@@ -1,11 +1,12 @@
 import { useState } from 'react'
+import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Card, CardContent } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { toast } from 'sonner'
-import { Loader2, Download, Sparkles, Wand2, RefreshCcw } from 'lucide-react'
+import { Loader2, Download, Sparkles, Wand2, RefreshCcw, Bot, MessageCircle } from 'lucide-react'
 
 import { DesignService } from '@/services/DesignService'
 import { Badge } from '@/components/ui/badge'
@@ -13,6 +14,8 @@ import { useDesign } from '@/contexts/DesignContext'
 import { useRazorpay } from '@/hooks/useRazorpay'
 import { useAuth } from '@/hooks/useAuth'
 import { Save } from 'lucide-react'
+import { DesignChatbot } from '@/components/design/DesignChatbot'
+import { GeminiService } from '@/services/GeminiService'
 
 export default function Design() {
     const { saveDesign, loading: saving } = useDesign()
@@ -27,6 +30,8 @@ export default function Design() {
     const [generatedImage, setGeneratedImage] = useState<string | null>(null)
     const [currentSeed, setCurrentSeed] = useState<number | null>(null)
     const [refinePrompt, setRefinePrompt] = useState('')
+    const [showChatbot, setShowChatbot] = useState(false)
+    const [weightData, setWeightData] = useState<{ range: string, analysis: string[] } | null>(null)
 
     const handleSuggestionClick = (suggestion: string) => {
         setPrompt((prev) => {
@@ -145,6 +150,11 @@ export default function Design() {
             setGeneratedImage(result.url)
             setCurrentSeed(result.seed)
             setRefinePrompt(prompt) // Initialize refinement prompt with original
+
+            // AI-powered weight calculation for display
+            const estWeight = await GeminiService.analyzeDesign(prompt)
+            setWeightData(estWeight)
+
             toast.success('Design generated successfully!')
         } catch (error: any) {
             console.error('Generation error:', error)
@@ -408,6 +418,19 @@ export default function Design() {
                                         </div>
                                     </div>
 
+                                    {/* Weight Display */}
+                                    {weightData && (
+                                        <div className="bg-gold/10 border border-gold/30 rounded-lg p-3 text-sm">
+                                            <div className="flex items-center gap-2 font-medium text-gold-dark mb-1">
+                                                <Sparkles className="h-4 w-4" />
+                                                Estimated Gold Weight: {weightData.range}
+                                            </div>
+                                            <p className="text-muted-foreground text-xs">
+                                                Based on design analysis: {weightData.analysis.join(', ')}
+                                            </p>
+                                        </div>
+                                    )}
+
                                     <div className="space-y-4 pt-4 border-t">
                                         <div className="space-y-2">
                                             <Label className="text-lg font-medium">Refine Result</Label>
@@ -457,6 +480,25 @@ export default function Design() {
                         </CardContent>
                     </Card>
                 </div>
+            </div>
+            {/* Floating Chatbot Button */}
+            <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-4">
+                {showChatbot && (
+                    <DesignChatbot
+                        onClose={() => setShowChatbot(false)}
+                        onUsePrompt={(newPrompt) => setPrompt(newPrompt)}
+                    />
+                )}
+                <Button
+                    size="icon"
+                    className={cn(
+                        "h-14 w-14 rounded-full shadow-lg transition-transform hover:scale-105",
+                        showChatbot ? "bg-red-500 hover:bg-red-600" : "bg-gradient-gold text-black"
+                    )}
+                    onClick={() => setShowChatbot(!showChatbot)}
+                >
+                    {showChatbot ? <Bot className="h-6 w-6 text-white" /> : <MessageCircle className="h-6 w-6" />}
+                </Button>
             </div>
         </div>
     )
