@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "npx tsc && vite build",
+    "build": "npx -p typescript tsc && vite build",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview"
   },
@@ -69,6 +69,7 @@
     "tailwindcss-animate": "^1.0.7",
     "three": "^0.181.2",
     "vaul": "^0.9.9",
+    "typescript": "^5.9.3",
     "zod": "^3.25.76"
   },
   "devDependencies": {
@@ -85,7 +86,6 @@
     "eslint-plugin-react-refresh": "^0.4.6",
     "postcss": "^8.4.49",
     "tailwindcss": "^3.4.17",
-    "typescript": "^5.9.3",
     "vite": "^5.2.0"
   }
 }
