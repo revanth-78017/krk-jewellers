@@ -4,8 +4,12 @@ interface ImportMetaEnv {
     readonly VITE_CLERK_PUBLISHABLE_KEY: string
     readonly VITE_IMAGE_GENERATION_API_KEY: string
     readonly VITE_RAZORPAY_KEY_ID: string
+    readonly VITE_OPENROUTER_API_KEY: string
+    readonly VITE_POLLINATIONS_PUBLISHABLE_KEY: string
 }
 
 interface ImportMeta {
     readonly env: ImportMetaEnv
 }
+
+export { }

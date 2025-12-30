@@ -1,3 +1,5 @@
+import { InferenceClient } from "@huggingface/inference";
+
 export interface DesignParams {
     type: string
     material: string
@@ -5,27 +7,47 @@ export interface DesignParams {
     prompt: string
 }
 
+const HF_API_KEY = import.meta.env.VITE_HUGGINGFACE_API_KEY;
+const hf = new InferenceClient(HF_API_KEY);
+
+// Cache for object URLs to prevent memory leaks
+const urlCache = new Set<string>();
+
+const clearOldUrls = () => {
+    urlCache.forEach(url => URL.revokeObjectURL(url));
+    urlCache.clear();
+};
+
 export const DesignService = {
     generateDesign: async (params: DesignParams, seed?: number): Promise<{ url: string, seed: number }> => {
         // Construct a detailed prompt for better results
         const fullPrompt = `luxury ${params.type} jewelry, made of ${params.material}, featuring ${params.gemstone}, ${params.prompt}, photorealistic, 8k, white background, cinematic lighting, high quality, product photography, intricate details, sharp focus`;
 
-        // Encode the prompt for the URL
-        const encodedPrompt = encodeURIComponent(fullPrompt);
-
         // Use provided seed or generate a random one
         const usedSeed = seed ?? Math.floor(Math.random() * 1000000);
 
-        // Pollinations.ai URL with Flux model
-        const url = `https://image.pollinations.ai/prompt/${encodedPrompt}?seed=${usedSeed}&width=1024&height=1024&nologo=true&model=flux`;
+        try {
+            const blob = await hf.textToImage({
+                provider: "nscale",
+                model: "stabilityai/stable-diffusion-xl-base-1.0",
+                inputs: fullPrompt,
+                parameters: {
+                    num_inference_steps: 25, // Increased for better quality than the 5 in example
+                    seed: usedSeed
+                },
+            });
 
-        // Pre-load the image to ensure it exists before returning
-        return new Promise((resolve, reject) => {
-            const img = new Image();
-            img.onload = () => resolve({ url, seed: usedSeed });
-            img.onerror = () => reject(new Error('Failed to generate image'));
-            img.src = url;
-        });
+            // Clean up old URLs if we have many (simple heuristic)
+            if (urlCache.size > 10) clearOldUrls();
+
+            const imageUrl = URL.createObjectURL(blob as any);
+            urlCache.add(imageUrl);
+
+            return { url: imageUrl, seed: usedSeed };
+        } catch (error) {
+            console.error("Hugging Face Generation Error:", error);
+            throw error;
+        }
     },
 
     generate360Views: async (params: DesignParams, seed: number): Promise<string[]> => {
@@ -40,27 +62,34 @@ export const DesignService = {
             'front-left side view'
         ];
 
-        const generateAngle = async (angle: string) => {
+        const urls: string[] = [];
+
+        for (const angle of angles) {
             const prompt = `luxury ${params.type} jewelry, made of ${params.material}, featuring ${params.gemstone}, ${params.prompt}, ${angle}, photorealistic, 8k, continuous white background, cinematic lighting, high quality, product photography, intricate details, sharp focus, isolated on white`;
-            const encodedPrompt = encodeURIComponent(prompt);
-            // Use same seed for consistency across angles
-            const url = `https://image.pollinations.ai/prompt/${encodedPrompt}?seed=${seed}&width=1024&height=1024&nologo=true&model=flux`;
 
-            // Pre-load
-            return new Promise<string>((resolve, reject) => {
-                const img = new Image();
-                img.onload = () => resolve(url);
-                img.onerror = () => reject(new Error(`Failed to generate ${angle}`));
-                img.src = url;
-            });
-        };
-
-        try {
-            // Generate all angles in parallel
-            return await Promise.all(angles.map(angle => generateAngle(angle)));
-        } catch (error) {
-            console.error('Error generating 360 views:', error);
-            throw error;
+            try {
+                const blob = await hf.textToImage({
+                    provider: "nscale",
+                    model: "stabilityai/stable-diffusion-xl-base-1.0",
+                    inputs: prompt,
+                    parameters: {
+                        num_inference_steps: 20,
+                        seed: seed
+                    },
+                });
+                const url = URL.createObjectURL(blob as any);
+                urlCache.add(url);
+                urls.push(url);
+            } catch (error) {
+                console.error(`Error generating angle ${angle}:`, error);
+                // Fallback or skip
+            }
         }
+
+        return urls;
+    },
+
+    revokeUrls: () => {
+        clearOldUrls();
     }
 }

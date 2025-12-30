@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input'
 import { Bot, User, Send, X, ArrowRight, Sparkles, ArrowUpRight } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
-import { GeminiService } from '@/services/GeminiService'
+import { PollinationsService } from '@/services/PollinationsService'
 
 interface DesignChatbotProps {
     onClose: () => void
@@ -109,7 +109,7 @@ export function DesignChatbot({ onClose, onUsePrompt }: DesignChatbotProps) {
                     const prompt = `A premium professional jewelry design of a ${finalData.gender} ${finalData.item}, featuring a ${finalData.style} style. ${finalData.stones !== 'No Stones' ? `Adorned with ${finalData.stones} gemstones.` : 'Plain metal design.'} ${response !== 'None' ? `Details: ${response}.` : ''} High resolution, photorealistic, 8k, studio lighting, white background.`
 
                     // Real AI Analysis
-                    const weightAnalysis = await GeminiService.analyzeDesign(prompt)
+                    const weightAnalysis = await PollinationsService.analyzeDesign(prompt)
                     const weightString = `${weightAnalysis.range} \n(${weightAnalysis.analysis.join(', ')})`
 
                     setIsTyping(false)
@@ -141,7 +141,7 @@ export function DesignChatbot({ onClose, onUsePrompt }: DesignChatbotProps) {
             parts: m.content
         }))
 
-        const response = await GeminiService.generateResponse(history, text)
+        const response = await PollinationsService.generateResponse(history, text)
         addMessage('assistant', response)
     }
 

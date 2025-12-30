@@ -12,7 +12,9 @@
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
     "@hookform/resolvers": "^3.10.0",
+    "@huggingface/inference": "^4.13.5",
     "@mediapipe/tasks-vision": "^0.10.22-rc.20250304",
+    "@openrouter/sdk": "^0.3.11",
     "@radix-ui/react-accordion": "^1.2.2",
     "@radix-ui/react-alert-dialog": "^1.1.4",
     "@radix-ui/react-aspect-ratio": "^1.1.1",
@@ -68,8 +70,8 @@
     "tailwind-merge": "^2.6.0",
     "tailwindcss-animate": "^1.0.7",
     "three": "^0.181.2",
-    "vaul": "^0.9.9",
     "typescript": "^5.9.3",
+    "vaul": "^0.9.9",
     "zod": "^3.25.76"
   },
   "devDependencies": {

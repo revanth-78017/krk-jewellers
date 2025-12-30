@@ -15,7 +15,7 @@ import { useRazorpay } from '@/hooks/useRazorpay'
 import { useAuth } from '@/hooks/useAuth'
 import { Save } from 'lucide-react'
 import { DesignChatbot } from '@/components/design/DesignChatbot'
-import { GeminiService } from '@/services/GeminiService'
+import { PollinationsService } from '@/services/PollinationsService'
 
 export default function Design() {
     const { saveDesign, loading: saving } = useDesign()
@@ -32,6 +32,8 @@ export default function Design() {
     const [refinePrompt, setRefinePrompt] = useState('')
     const [showChatbot, setShowChatbot] = useState(false)
     const [weightData, setWeightData] = useState<{ range: string, analysis: string[] } | null>(null)
+    const [imageLoading, setImageLoading] = useState(false)
+    const [imageError, setImageError] = useState(false)
 
     const handleSuggestionClick = (suggestion: string) => {
         setPrompt((prev) => {
@@ -147,12 +149,14 @@ export default function Design() {
                 gemstone,
                 prompt
             })
+            setImageLoading(true)
+            setImageError(false)
             setGeneratedImage(result.url)
             setCurrentSeed(result.seed)
             setRefinePrompt(prompt) // Initialize refinement prompt with original
 
             // AI-powered weight calculation for display
-            const estWeight = await GeminiService.analyzeDesign(prompt)
+            const estWeight = await PollinationsService.analyzeDesign(prompt)
             setWeightData(estWeight)
 
             toast.success('Design generated successfully!')
@@ -177,6 +181,8 @@ export default function Design() {
                 prompt: refinePrompt
             }, currentSeed)
 
+            setImageLoading(true)
+            setImageError(false)
             setGeneratedImage(result.url)
             // Seed remains the same for further refinements
             toast.success('Design updated!')
@@ -404,18 +410,56 @@ export default function Design() {
                                         <img
                                             src={generatedImage}
                                             alt="Generated Design"
-                                            className="w-full h-full object-cover rounded-xl shadow-lg"
+                                            className={cn(
+                                                "w-full h-full object-cover rounded-xl shadow-lg transition-opacity duration-300",
+                                                imageLoading ? "opacity-0" : "opacity-100"
+                                            )}
+                                            onLoad={() => setImageLoading(false)}
+                                            onError={() => {
+                                                setImageLoading(false)
+                                                setImageError(true)
+                                            }}
                                         />
-                                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col gap-3 items-center justify-center rounded-xl p-4">
-                                            <Button onClick={handlePaymentAndDownload} variant="secondary" size="lg" className="w-full max-w-[200px]" disabled={paying}>
-                                                {paying ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Download className="mr-2 h-5 w-5" />}
-                                                Download (₹100)
-                                            </Button>
-                                            <Button onClick={handleSave} variant="outline" size="lg" className="w-full max-w-[200px] bg-white/90 text-black hover:bg-white" disabled={saving}>
-                                                {saving ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Save className="mr-2 h-5 w-5" />}
-                                                Save to Account
-                                            </Button>
-                                        </div>
+                                        {imageLoading && (
+                                            <div className="absolute inset-0 flex flex-col items-center justify-center bg-muted rounded-xl">
+                                                <Loader2 className="h-10 w-10 animate-spin text-primary mb-2" />
+                                                <p className="text-sm font-medium">Downloading AI result...</p>
+                                            </div>
+                                        )}
+                                        {imageError && (
+                                            <div className="absolute inset-0 flex flex-col items-center justify-center bg-destructive/10 border border-destructive/20 rounded-xl p-4 text-center">
+                                                <Bot className="h-10 w-10 text-destructive mb-2" />
+                                                <p className="font-semibold text-destructive">Generation Error</p>
+                                                <p className="text-xs text-muted-foreground mt-1">
+                                                    Hugging Face Inference API encountered an issue.
+                                                    Please check your API key or try again in a few minutes.
+                                                </p>
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    className="mt-4"
+                                                    onClick={() => {
+                                                        setImageError(false)
+                                                        handleGenerate()
+                                                    }}
+                                                >
+                                                    <RefreshCcw className="h-4 w-4 mr-2" />
+                                                    Retry
+                                                </Button>
+                                            </div>
+                                        )}
+                                        {!imageLoading && !imageError && (
+                                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col gap-3 items-center justify-center rounded-xl p-4">
+                                                <Button onClick={handlePaymentAndDownload} variant="secondary" size="lg" className="w-full max-w-[200px]" disabled={paying}>
+                                                    {paying ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Download className="mr-2 h-5 w-5" />}
+                                                    Download (₹100)
+                                                </Button>
+                                                <Button onClick={handleSave} variant="outline" size="lg" className="w-full max-w-[200px] bg-white/90 text-black hover:bg-white" disabled={saving}>
+                                                    {saving ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Save className="mr-2 h-5 w-5" />}
+                                                    Save to Account
+                                                </Button>
+                                            </div>
+                                        )}
                                     </div>
 
                                     {/* Weight Display */}
